@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import SiteCosts from './SiteCosts';
 import SitePlanSaver from './SitePlanSaver';
+import ClientPayments from './ClientPayments';
 import { Icons } from './Icons';
 import '../index.css';
 
 const SiteDetail = ({ site, onBack, user, isCEO }) => {
-    const [activeTab, setActiveTab] = useState('expenses'); // 'expenses' or 'plans'
+    const [activeTab, setActiveTab] = useState('expenses'); // 'expenses' | 'plans' | 'payments'
 
     return (
         <div className="site-detail-container">
@@ -38,25 +39,42 @@ const SiteDetail = ({ site, onBack, user, isCEO }) => {
                             >
                                 <Icons.File size={16} /> Site Plan Saver
                             </button>
+                            <button
+                                onClick={() => setActiveTab('payments')}
+                                className={`btn btn-small ${activeTab === 'payments' ? 'btn-primary' : ''}`}
+                                style={{ border: 'none', boxShadow: activeTab === 'payments' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none' }}
+                            >
+                                <Icons.Money size={16} /> Client Payments
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="container">
-                {activeTab === 'expenses' ? (
+                {activeTab === 'expenses' && (
                     <div className="fade-in">
                         <SiteCosts
                             site={site}
                             onBack={onBack}
                             user={user}
                             isCEO={isCEO}
-                            hideHeader={true} // We'll add this prop to SiteCosts to avoid double header
+                            hideHeader={true}
                         />
                     </div>
-                ) : (
+                )}
+                {activeTab === 'plans' && (
                     <div className="fade-in">
                         <SitePlanSaver
+                            site={site}
+                            user={user}
+                            isCEO={isCEO}
+                        />
+                    </div>
+                )}
+                {activeTab === 'payments' && (
+                    <div className="fade-in">
+                        <ClientPayments
                             site={site}
                             user={user}
                             isCEO={isCEO}
