@@ -3,6 +3,7 @@ import { db, storage } from '../firebase';
 import { collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Icons } from './Icons';
+import { compressImage } from '../utils/imageUtils';
 import '../index.css';
 
 // --- Sub-components for Performance ---
@@ -528,13 +529,19 @@ const SiteCosts = ({ site, onBack, user, isCEO, hideHeader = false }) => {
 
         setRowUploading(prev => ({ ...prev, [rowId]: true }));
         try {
+            let uploadFile = file;
+            if (file.type.startsWith('image/')) {
+                console.log("📸 Compressing receipt for faster upload...");
+                uploadFile = await compressImage(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.6 });
+            }
+
             // Use a unique path to avoid collisions
-            const fileExt = file.name.split('.').pop();
+            const fileExt = uploadFile.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const storageRef = ref(storage, `receipts/${site.id}/${rowId}/${fileName}`);
 
-            console.log("🔼 Starting upload for:", file.name);
-            await uploadBytes(storageRef, file);
+            console.log("🔼 Starting upload for:", uploadFile.name);
+            await uploadBytes(storageRef, uploadFile);
             console.log("✅ File uploaded to Storage");
 
             const downloadURL = await getDownloadURL(storageRef);
@@ -543,9 +550,9 @@ const SiteCosts = ({ site, onBack, user, isCEO, hideHeader = false }) => {
             // Update Firestore with receipt info
             const updateData = {
                 receiptUrl: downloadURL,
-                receiptName: file.name,
-                receiptSize: file.size,
-                receiptType: file.type,
+                receiptName: uploadFile.name,
+                receiptSize: uploadFile.size,
+                receiptType: uploadFile.type,
                 uploadedAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             };

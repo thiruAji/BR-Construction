@@ -3,6 +3,7 @@ import { db, storage } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Icons } from './Icons';
+import { compressImage } from '../utils/imageUtils';
 import '../index.css';
 
 const SitePlanSaver = ({ site, user, isCEO }) => {
@@ -37,7 +38,7 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
     }, [site.id]);
 
     const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
+        let file = e.target.files[0];
         if (!file) return;
 
         // Validation
@@ -54,6 +55,12 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
 
         setUploading(true);
         try {
+            // Compress image if it is one
+            if (file.type.startsWith('image/')) {
+                console.log("🖼️ Compressing image for faster upload...");
+                file = await compressImage(file, { maxWidth: 2000, maxHeight: 2000, quality: 0.8 });
+            }
+
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const storagePath = `plans/${site.id}/${fileName}`;
