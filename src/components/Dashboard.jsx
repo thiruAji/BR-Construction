@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
 import { Icons } from './Icons';
+import MeasurementConverter from './MeasurementConverter';
 import '../index.css';
 
 const Dashboard = ({ onSelectSite }) => {
@@ -60,7 +61,7 @@ const Dashboard = ({ onSelectSite }) => {
             setLoading(false);
             setError(null);
             console.log("📍 Sites updated from Firestore:", sitesData.length, "sites");
-            
+
             // Notify all tabs about the update
             if (broadcastChannelRef.current) {
                 broadcastChannelRef.current.postMessage({
@@ -145,7 +146,7 @@ const Dashboard = ({ onSelectSite }) => {
         try {
             await deleteDoc(doc(db, 'sites', siteId));
             console.log("✅ Site deleted successfully:", siteId);
-            
+
             // Broadcast deletion to all other tabs
             if (broadcastChannelRef.current) {
                 broadcastChannelRef.current.postMessage({
@@ -156,7 +157,7 @@ const Dashboard = ({ onSelectSite }) => {
                 });
                 console.log("📡 Broadcasted site deletion to other tabs");
             }
-            
+
             alert(`✅ "${siteName}" has been deleted.`);
         } catch (error) {
             console.error("Error deleting site:", error);
@@ -249,6 +250,9 @@ const Dashboard = ({ onSelectSite }) => {
                     </button>
                 )}
             </div>
+
+            {/* Measurement Converter Tool */}
+            <MeasurementConverter />
 
             {/* Add Site Modal/Form */}
             {showAddSite && (
