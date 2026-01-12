@@ -159,15 +159,9 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
         if (!confirm(`Delete plan "${plan.name}"?`)) return;
 
         try {
-            // Delete from storage
-            if (plan.storagePath) {
-                const storageRef = ref(storage, plan.storagePath);
-                await deleteObject(storageRef);
-            }
-
-            // Delete from firestore
+            // Delete from firestore only (no Firebase Storage to clean up with base64)
             await deleteDoc(doc(db, 'sites', site.id, 'plans', plan.id));
-            alert("✅ Plan deleted.");
+            console.log("✅ Plan deleted.");
         } catch (err) {
             console.error("Delete failed:", err);
             alert("❌ Failed to delete plan.");

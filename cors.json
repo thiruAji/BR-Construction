@@ -1,0 +1,14 @@
+[
+    {
+        "origin": [
+            "https://thiruaji.github.io"
+        ],
+        "method": [
+            "GET",
+            "PUT",
+            "POST",
+            "DELETE"
+        ],
+        "maxAgeSeconds": 3600
+    }
+]
