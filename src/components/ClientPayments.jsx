@@ -134,13 +134,13 @@ const ClientPayments = ({ site, user, isCEO }) => {
     return (
         <div className="fade-in">
             {/* Financial Overview Card */}
-            <div className="card mb-lg" style={{ background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)', color: 'white', border: 'none' }}>
+            <div className="card mb-lg" style={{ background: 'var(--primary-color)', color: 'white', border: 'none' }}>
                 <div className="flex-between mb-md">
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Icons.Wallet size={28} /> Project Financials
                     </h3>
                     {isCEOUser && !editingContract && (
-                        <button onClick={() => setEditingContract(true)} className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none' }}>
+                        <button onClick={() => setEditingContract(true)} className="btn" style={{ background: 'white', color: 'var(--primary-color)', border: 'none', fontWeight: 'bold' }}>
                             <Icons.Edit size={16} /> Edit Contract
                         </button>
                     )}
@@ -157,7 +157,7 @@ const ClientPayments = ({ site, user, isCEO }) => {
                             style={{ flex: 1, maxWidth: '200px' }}
                         />
                         <button onClick={handleSaveContractValue} className="btn btn-success">Save</button>
-                        <button onClick={() => { setContractValue(site.contractValue || 0); setEditingContract(false); }} className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none' }}>Cancel</button>
+                        <button onClick={() => { setContractValue(site.contractValue || 0); setEditingContract(false); }} className="btn" style={{ background: 'white', color: 'var(--primary-color)', border: 'none' }}>Cancel</button>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
