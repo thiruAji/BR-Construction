@@ -9,12 +9,13 @@ import '../index.css';
 const SitePlanSaver = ({ site, user, isCEO }) => {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [uploading, setUploading] = useState(false);
+    const [uploadingItems, setUploadingItems] = useState({}); // Map of tempId -> { name, progress, url, type }
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
     const isCEOUser = isCEO();
 
     useEffect(() => {
+        // ... (existing useEffect for fetching plans)
         console.log("📂 SitePlanSaver loading for site:", site.id);
         const q = query(
             collection(db, 'sites', site.id, 'plans'),
@@ -41,6 +42,9 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
         let file = e.target.files[0];
         if (!file) return;
 
+        // Reset input immediately so same file can be selected again
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
         // Validation
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
         if (!validTypes.includes(file.type)) {
@@ -53,7 +57,21 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
             return;
         }
 
-        setUploading(true);
+        // Optimistic UI: Create temporary item
+        const tempId = Date.now().toString();
+        const previewUrl = URL.createObjectURL(file);
+
+        setUploadingItems(prev => ({
+            ...prev,
+            [tempId]: {
+                name: file.name,
+                progress: 0,
+                url: previewUrl,
+                type: file.type,
+                status: 'compressing'
+            }
+        }));
+
         try {
             // Compress image if it is one
             if (file.type.startsWith('image/')) {
@@ -61,34 +79,74 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
                 file = await compressImage(file, { maxWidth: 2000, maxHeight: 2000, quality: 0.8 });
             }
 
+            setUploadingItems(prev => ({
+                ...prev,
+                [tempId]: { ...prev[tempId], status: 'uploading' }
+            }));
+
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const storagePath = `plans/${site.id}/${fileName}`;
             const storageRef = ref(storage, storagePath);
 
             console.log("🔼 Uploading plan:", file.name);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
 
-            await addDoc(collection(db, 'sites', site.id, 'plans'), {
-                name: file.name,
-                url: downloadURL,
-                type: file.type,
-                size: file.size,
-                storagePath: storagePath,
-                createdAt: serverTimestamp(),
-                createdBy: user.uid,
-                createdByEmail: user.email
-            });
+            // Use resumable upload for progress monitoring
+            // Note: We need to import uploadBytesResumable at the top
+            const { uploadBytesResumable } = await import('firebase/storage');
+            const uploadTask = uploadBytesResumable(storageRef, file);
 
-            console.log("✅ Plan saved successfully");
-            alert("✅ Site plan saved successfully!");
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadingItems(prev => ({
+                        ...prev,
+                        [tempId]: { ...prev[tempId], progress: progress }
+                    }));
+                },
+                (error) => {
+                    console.error("Upload error:", error);
+                    alert("Upload failed: " + error.message);
+                    setUploadingItems(prev => {
+                        const newState = { ...prev };
+                        delete newState[tempId];
+                        return newState;
+                    });
+                },
+                async () => {
+                    // Upload completed successfully
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+                    await addDoc(collection(db, 'sites', site.id, 'plans'), {
+                        name: file.name,
+                        url: downloadURL,
+                        type: file.type,
+                        size: file.size,
+                        storagePath: storagePath,
+                        createdAt: serverTimestamp(),
+                        createdBy: user.uid,
+                        createdByEmail: user.email
+                    });
+
+                    console.log("✅ Plan saved successfully");
+
+                    // Remove form uploading items (Firestore listener will pick up real item)
+                    setUploadingItems(prev => {
+                        const newState = { ...prev };
+                        delete newState[tempId];
+                        return newState;
+                    });
+                }
+            );
+
         } catch (err) {
             console.error("Upload failed:", err);
             alert("❌ Failed to upload plan: " + err.message);
-        } finally {
-            setUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
+            setUploadingItems(prev => {
+                const newState = { ...prev };
+                delete newState[tempId];
+                return newState;
+            });
         }
     };
 
@@ -134,13 +192,8 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
                 <button
                     onClick={() => fileInputRef.current.click()}
                     className="btn btn-primary"
-                    disabled={uploading}
                 >
-                    {uploading ? (
-                        <><span className="loading-spinner-small"></span> Uploading...</>
-                    ) : (
-                        <><Icons.Plus size={18} /> Upload New Plan</>
-                    )}
+                    <Icons.Plus size={18} /> Upload New Plan
                 </button>
                 <input
                     type="file"
@@ -162,6 +215,44 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                    {/* Render Optimistic Uploading Items */}
+                    {Object.values(uploadingItems).map((item, index) => (
+                        <div key={`upload-${index}`} className="card plan-card" style={{ padding: 0, overflow: 'hidden', position: 'relative', border: '2px solid var(--primary-color)' }}>
+                            <div style={{ height: '160px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border-color)', position: 'relative' }}>
+                                {/* Overlay for compressing/uploading state */}
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                                    <div className="badge badge-primary">{item.status === 'compressing' ? 'Compressing...' : `${Math.round(item.progress)}%`}</div>
+                                </div>
+                                {item.type.includes('image') ? (
+                                    <img src={item.url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+                                ) : (
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ color: 'var(--primary-color)', marginBottom: '8px' }}><Icons.File size={48} /></div>
+                                        <div className="badge">PDF DOCUMENT</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ padding: '1rem' }}>
+                                <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.name}>
+                                    {item.name}
+                                </h4>
+                                {/* Progress Bar */}
+                                <div style={{ height: '6px', background: '#eee', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div style={{
+                                        height: '100%',
+                                        background: 'var(--success-color)',
+                                        width: `${item.progress}%`,
+                                        transition: 'width 0.2s ease-out'
+                                    }} />
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', textAlign: 'right' }}>
+                                    {item.status === 'compressing' ? 'Optimizing...' : 'Uploading...'}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Render Real Plans */}
                     {plans.map(plan => (
                         <div key={plan.id} className="card plan-card" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
                             <div style={{ height: '160px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border-color)' }}>
