@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Icons } from './Icons';
 import { compressImage } from '../utils/imageUtils';
 import '../index.css';
@@ -15,7 +14,6 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
     const isCEOUser = isCEO();
 
     useEffect(() => {
-        // ... (existing useEffect for fetching plans)
         console.log("📂 SitePlanSaver loading for site:", site.id);
         const q = query(
             collection(db, 'sites', site.id, 'plans'),
@@ -38,6 +36,16 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
         return () => unsubscribe();
     }, [site.id]);
 
+    // Helper to convert file to base64
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    };
+
     const handleFileUpload = async (e) => {
         let file = e.target.files[0];
         if (!file) return;
@@ -52,8 +60,9 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
             return;
         }
 
-        if (file.size > 20 * 1024 * 1024) { // 20MB limit for plans
-            alert("❌ File size exceeds 20MB limit.");
+        // Stricter size limit for base64 storage (2MB instead of 20MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert("❌ File size exceeds 2MB limit. (Temporary limit until Firebase Storage is enabled)");
             return;
         }
 
@@ -75,73 +84,57 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
         try {
             // Compress image if it is one
             if (file.type.startsWith('image/')) {
-                console.log("🖼️ Compressing image for faster upload...");
-                file = await compressImage(file, { maxWidth: 2000, maxHeight: 2000, quality: 0.8 });
+                console.log("🖼️ Compressing image...");
+                file = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.7 });
             }
 
             setUploadingItems(prev => ({
                 ...prev,
-                [tempId]: { ...prev[tempId], status: 'uploading' }
+                [tempId]: { ...prev[tempId], status: 'uploading', progress: 50 }
             }));
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const storagePath = `plans/${site.id}/${fileName}`;
-            const storageRef = ref(storage, storagePath);
+            console.log("💾 Saving plan to Firestore (base64)...");
 
-            console.log("🔼 Uploading plan:", file.name);
+            // Convert to base64 for temporary storage
+            const base64Data = await fileToBase64(file);
 
-            // Use resumable upload for progress monitoring
-            // Note: We need to import uploadBytesResumable at the top
-            const { uploadBytesResumable } = await import('firebase/storage');
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            setUploadingItems(prev => ({
+                ...prev,
+                [tempId]: { ...prev[tempId], progress: 80 }
+            }));
 
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setUploadingItems(prev => ({
-                        ...prev,
-                        [tempId]: { ...prev[tempId], progress: progress }
-                    }));
-                },
-                (error) => {
-                    console.error("Upload error:", error);
-                    alert("Upload failed: " + error.message);
-                    setUploadingItems(prev => {
-                        const newState = { ...prev };
-                        delete newState[tempId];
-                        return newState;
-                    });
-                },
-                async () => {
-                    // Upload completed successfully
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            // Save to Firestore instead of Storage
+            await addDoc(collection(db, 'sites', site.id, 'plans'), {
+                name: file.name,
+                url: base64Data, // Store base64 data URL temporarily
+                type: file.type,
+                size: file.size,
+                storageType: 'base64', // Flag to indicate this is temporary
+                createdAt: serverTimestamp(),
+                createdBy: user.uid,
+                createdByEmail: user.email
+            });
 
-                    await addDoc(collection(db, 'sites', site.id, 'plans'), {
-                        name: file.name,
-                        url: downloadURL,
-                        type: file.type,
-                        size: file.size,
-                        storagePath: storagePath,
-                        createdAt: serverTimestamp(),
-                        createdBy: user.uid,
-                        createdByEmail: user.email
-                    });
+            console.log("✅ Plan saved successfully (temporary base64 storage)");
 
-                    console.log("✅ Plan saved successfully");
+            // Simulate completion progress
+            setUploadingItems(prev => ({
+                ...prev,
+                [tempId]: { ...prev[tempId], progress: 100 }
+            }));
 
-                    // Remove form uploading items (Firestore listener will pick up real item)
-                    setUploadingItems(prev => {
-                        const newState = { ...prev };
-                        delete newState[tempId];
-                        return newState;
-                    });
-                }
-            );
+            // Remove from uploading items after short delay
+            setTimeout(() => {
+                setUploadingItems(prev => {
+                    const newState = { ...prev };
+                    delete newState[tempId];
+                    return newState;
+                });
+            }, 500);
 
         } catch (err) {
             console.error("Upload failed:", err);
-            alert("❌ Failed to upload plan: " + err.message);
+            alert("❌ Failed to save plan: " + err.message);
             setUploadingItems(prev => {
                 const newState = { ...prev };
                 delete newState[tempId];
@@ -202,7 +195,7 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
                 <div className="flex-center" style={{ minHeight: '30vh' }}>
                     <div className="loading-spinner"></div>
                 </div>
-            ) : plans.length === 0 ? (
+            ) : plans.length === 0 && Object.keys(uploadingItems).length === 0 ? (
                 <div className="card flex-center" style={{ minHeight: '30vh', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.02)', border: '1px dashed var(--border-color)' }}>
                     <div style={{ opacity: 0.3 }}><Icons.Folder size={48} /></div>
                     <p className="text-secondary">No plans uploaded yet.</p>
