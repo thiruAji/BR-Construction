@@ -74,7 +74,7 @@ const ExpenseRow = React.memo(({ row, columns, onUpdate, onDelete, onUpload, isU
     // Members can edit their own rows, but not CEO-created fields
     // CEO can edit everything
     // Both CEO and members can upload receipts for any row
-    
+
     const isRowReadOnly = !isCEOUser && row.createdByRole === 'CEO';
     const canUpload = isCEOUser || !isRowReadOnly; // CEO always can, members can upload for their own rows
     const fileInputRef = React.useRef(null);
@@ -156,11 +156,11 @@ const ExpenseRow = React.memo(({ row, columns, onUpdate, onDelete, onUpload, isU
                         alignItems: 'center',
                         gap: '4px'
                     }}
-                    onClick={() => {
-                        if (canUpload && !isUploading && fileInputRef.current) {
-                            fileInputRef.current.click();
-                        }
-                    }}>
+                        onClick={() => {
+                            if (canUpload && !isUploading && fileInputRef.current) {
+                                fileInputRef.current.click();
+                            }
+                        }}>
                         {isUploading ? (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <span className="loading-spinner-small"></span>
@@ -202,9 +202,9 @@ const ExpenseRow = React.memo(({ row, columns, onUpdate, onDelete, onUpload, isU
     );
 });
 
-const SiteCosts = ({ site, onBack, user, isCEO }) => {
+const SiteCosts = ({ site, onBack, user, isCEO, hideHeader = false }) => {
     console.log("🏗️ SiteCosts component loaded for site:", site?.id, site?.name);
-    
+
     const [rows, setRows] = useState([]);
     const [columns, setColumns] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -219,7 +219,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [rowUploading, setRowUploading] = useState({}); // Map of rowId -> boolean
     const isCEOUser = isCEO();
-    
+
     // BroadcastChannel for multi-user/multi-tab sync
     const broadcastChannelRef = React.useRef(null);
 
@@ -235,7 +235,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
         } catch (e) {
             console.warn("BroadcastChannel not supported:", e);
         }
-        
+
         return () => {
             if (broadcastChannelRef.current) {
                 broadcastChannelRef.current.close();
@@ -261,7 +261,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
                 ];
 
                 const loadedColumns = data.expenseColumns || expensesData.columns || defaultColumns;
-                
+
                 // Ensure all columns have createdByRole property
                 const columnsWithRoles = loadedColumns.map(col => ({
                     ...col,
@@ -434,18 +434,18 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
             console.error("❌ Member cannot edit CEO-created cell");
             return; // Prevent edit
         }
-        
+
         // Validate amount field
         if (colId === 'amount' && value && isNaN(parseFloat(value))) {
             alert("❌ Amount must be a valid number");
             return;
         }
-        
+
         // Optimistic update - When CEO edits a cell, mark it as CEO-owned (immutable for others)
         const cellCreatorValue = isCEOUser ? 'CEO' : user.role;
-        setRows(prev => prev.map(r => r.id === rowId ? { 
-            ...r, 
-            [colId]: value, 
+        setRows(prev => prev.map(r => r.id === rowId ? {
+            ...r,
+            [colId]: value,
             lastUpdatedByRole: user.role,
             cellCreators: { ...r.cellCreators, [colId]: cellCreatorValue } // CEO values are immutable
         } : r));
@@ -456,7 +456,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
                 cellCreators: { ...(row?.cellCreators || {}), [colId]: cellCreatorValue }, // CEO values become immutable
                 updatedAt: serverTimestamp()
             });
-            
+
             // Broadcast update to other tabs (don't fail if this errors)
             if (broadcastChannelRef.current) {
                 try {
@@ -486,14 +486,14 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
             console.error("No rowId provided for deletion");
             return;
         }
-        
+
         // Check if member is trying to delete a CEO-created row
         const row = rows.find(r => r.id === rowId);
         if (!isCEOUser && row?.createdByRole === 'CEO') {
             alert("❌ You can only delete rows you created. CEO-created rows cannot be deleted by members.");
             return;
         }
-        
+
         if (!window.confirm('Delete this expense row?')) return;
         try {
             await deleteDoc(doc(db, 'sites', site.id, 'expenses', rowId));
@@ -536,7 +536,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
             console.log("🔼 Starting upload for:", file.name);
             await uploadBytes(storageRef, file);
             console.log("✅ File uploaded to Storage");
-            
+
             const downloadURL = await getDownloadURL(storageRef);
             console.log("✅ Got download URL:", downloadURL);
 
@@ -549,7 +549,7 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
                 uploadedAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             };
-            
+
             await updateDoc(doc(db, 'sites', site.id, 'expenses', rowId), updateData);
             console.log("✅ Firestore updated with receipt URL");
 
@@ -660,30 +660,41 @@ const SiteCosts = ({ site, onBack, user, isCEO }) => {
 
     return (
         <div className="container fade-in" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-            {/* Professional Header */}
-            <header className="flex-between mb-lg" style={{ alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.5rem' }}>
-                <div className="flex gap-md" style={{ alignItems: 'center' }}>
-                    <button onClick={onBack} className="btn btn-secondary" style={{ padding: '8px' }}>
-                        <Icons.Back size={20} />
-                    </button>
-                    <div>
-                        <div className="flex gap-sm" style={{ alignItems: 'center' }}>
-                            <div style={{ color: 'var(--accent-color)' }}>
-                                <Icons.Building size={24} />
+            {/* Professional Header - Only show if not hidden by parent */}
+            {!hideHeader && (
+                <header className="flex-between mb-lg" style={{ alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.5rem' }}>
+                    <div className="flex gap-md" style={{ alignItems: 'center' }}>
+                        <button onClick={onBack} className="btn btn-secondary" style={{ padding: '8px' }}>
+                            <Icons.Back size={20} />
+                        </button>
+                        <div>
+                            <div className="flex gap-sm" style={{ alignItems: 'center' }}>
+                                <div style={{ color: 'var(--accent-color)' }}>
+                                    <Icons.Building size={24} />
+                                </div>
+                                <h2 style={{ margin: 0 }}>{site.name}</h2>
                             </div>
-                            <h2 style={{ margin: 0 }}>{site.name}</h2>
+                            <p className="text-secondary" style={{ fontSize: '0.875rem', marginTop: '2px' }}>
+                                <Icons.Location size={14} /> {site.location}
+                            </p>
                         </div>
-                        <p className="text-secondary" style={{ fontSize: '0.875rem', marginTop: '2px' }}>
-                            <Icons.Location size={14} /> {site.location}
-                        </p>
                     </div>
-                </div>
-                <div className="flex gap-sm">
-                    <button onClick={exportToCSV} className="btn btn-secondary">
-                        <Icons.Download size={18} /> Export Data
+                    <div className="flex gap-sm">
+                        <button onClick={exportToCSV} className="btn btn-secondary">
+                            <Icons.Download size={18} /> Export Data
+                        </button>
+                    </div>
+                </header>
+            )}
+
+            {/* If header is hidden, show export button in a different way or keep it available */}
+            {hideHeader && (
+                <div className="flex justify-end mb-md">
+                    <button onClick={exportToCSV} className="btn btn-secondary btn-small">
+                        <Icons.Download size={16} /> Export CSV
                     </button>
                 </div>
-            </header>
+            )}
 
             {/* Financial KPI Strip */}
             <section className="card mb-lg" style={{ background: 'var(--primary-color)', color: 'white', border: 'none' }}>

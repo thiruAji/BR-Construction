@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { isConfigured } from './firebase';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import SiteCosts from './components/SiteCosts';
+import SiteDetail from './components/SiteDetail';
 import './index.css';
 
 // Fast loading fallback
@@ -35,10 +35,10 @@ const AppContent = () => {
         return <Login />;
     }
 
-    // If a site is selected, show the site details page
+    // If a site is selected, show the site details page (Plan Saver or Expenses)
     if (selectedSite) {
-        console.log("📍 Showing SiteCosts for:", selectedSite.name);
-        return <SiteCosts site={selectedSite} onBack={() => {
+        console.log("📍 Showing SiteDetail for:", selectedSite.name);
+        return <SiteDetail site={selectedSite} onBack={() => {
             console.log("🔙 Going back to dashboard");
             setSelectedSite(null);
         }} user={user} isCEO={isCEO} />;
