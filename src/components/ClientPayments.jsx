@@ -44,12 +44,10 @@ const ClientPayments = ({ site, user, isCEO }) => {
             let total = 0;
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
-                // Sum all numeric values except metadata fields
-                Object.entries(data).forEach(([key, value]) => {
-                    if (typeof value === 'number' && !['createdAt', 'updatedAt'].includes(key)) {
-                        total += value;
-                    }
-                });
+                // Sum the 'amount' field from each expense document
+                if (data.amount && typeof data.amount === 'number') {
+                    total += data.amount;
+                }
             });
             setTotalExpenses(total);
         });

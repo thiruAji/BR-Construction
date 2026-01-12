@@ -10,6 +10,7 @@ const Dashboard = ({ onSelectSite }) => {
     const { user, logout, isCEO, upgradeToCEO } = useAuth();
     const [sites, setSites] = useState([]);
     const [showAddSite, setShowAddSite] = useState(false);
+    const [showConverter, setShowConverter] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteLocation, setNewSiteLocation] = useState('');
     const [loading, setLoading] = useState(true);
@@ -249,10 +250,18 @@ const Dashboard = ({ onSelectSite }) => {
                         {upgrading ? 'Verifying...' : 'Upgrade to CEO'}
                     </button>
                 )}
+                <button
+                    onClick={() => setShowConverter(!showConverter)}
+                    className="btn btn-secondary"
+                    title="Toggle Measurement Converter"
+                >
+                    <Icons.TrendingUp size={18} style={{ transform: 'rotate(45deg)' }} />
+                    {showConverter ? 'Hide' : 'Show'} Converter
+                </button>
             </div>
 
             {/* Measurement Converter Tool */}
-            <MeasurementConverter />
+            {showConverter && <MeasurementConverter />}
 
             {/* Add Site Modal/Form */}
             {showAddSite && (
