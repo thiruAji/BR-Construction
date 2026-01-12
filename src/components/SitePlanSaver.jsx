@@ -124,19 +124,17 @@ const SitePlanSaver = ({ site, user, isCEO }) => {
                     <h3>Site Plans & Documents</h3>
                     <p className="text-secondary">Upload drawings, blueprints, or site progress photos</p>
                 </div>
-                {isCEOUser && (
-                    <button
-                        onClick={() => fileInputRef.current.click()}
-                        className="btn btn-primary"
-                        disabled={uploading}
-                    >
-                        {uploading ? (
-                            <><span className="loading-spinner-small"></span> Uploading...</>
-                        ) : (
-                            <><Icons.Plus size={18} /> Upload New Plan</>
-                        )}
-                    </button>
-                )}
+                <button
+                    onClick={() => fileInputRef.current.click()}
+                    className="btn btn-primary"
+                    disabled={uploading}
+                >
+                    {uploading ? (
+                        <><span className="loading-spinner-small"></span> Uploading...</>
+                    ) : (
+                        <><Icons.Plus size={18} /> Upload New Plan</>
+                    )}
+                </button>
                 <input
                     type="file"
                     ref={fileInputRef}
