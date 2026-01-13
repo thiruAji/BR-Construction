@@ -151,15 +151,15 @@ const AreaCalculator = () => {
         if (!isDrawing || currentSegment.length === 0) return;
         e.preventDefault();
 
-        // Simplify path
-        const simplified = [];
-        const skipFactor = Math.max(1, Math.floor(currentSegment.length / 30));
-        for (let i = 0; i < currentSegment.length; i += skipFactor) {
-            simplified.push(currentSegment[i]);
-        }
+        // AUTO-STRAIGHTEN: Convert drawn path to straight line
+        const startPoint = currentSegment[0];
+        const endPoint = currentSegment[currentSegment.length - 1];
 
-        // Save segment without length first
-        setSegments(prev => [...prev, { path: simplified, length: null }]);
+        // Create perfectly straight line
+        const straightLine = [startPoint, endPoint];
+
+        // Save segment with straight line
+        setSegments(prev => [...prev, { path: straightLine, length: null }]);
         setCurrentSegment([]);
         setShowLengthInput(true);
     };
