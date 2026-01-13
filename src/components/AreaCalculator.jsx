@@ -137,15 +137,27 @@ const AreaCalculator = () => {
                     ctx.fillText(`${seg.length} ${seg.unit}`, midPoint.x, midPoint.y + 4);
                 }
 
-                // Draw endpoint circles for magnetic snapping
-                const endPoint = seg.path[seg.path.length - 1];
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+                // Draw BOTH start and end point magnetic targets
+                // Start point (first point of segment)
+                const startPt = seg.path[0];
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
                 ctx.beginPath();
-                ctx.arc(endPoint.x, endPoint.y, 15, 0, 2 * Math.PI);
+                ctx.arc(startPt.x, startPt.y, 25, 0, 2 * Math.PI);
                 ctx.fill();
                 ctx.fillStyle = 'var(--accent-color)';
                 ctx.beginPath();
-                ctx.arc(endPoint.x, endPoint.y, 4, 0, 2 * Math.PI);
+                ctx.arc(startPt.x, startPt.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // End point (last point of segment)
+                const endPt = seg.path[seg.path.length - 1];
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+                ctx.beginPath();
+                ctx.arc(endPt.x, endPt.y, 25, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'var(--accent-color)';
+                ctx.beginPath();
+                ctx.arc(endPt.x, endPt.y, 5, 0, 2 * Math.PI);
                 ctx.fill();
             }
         });
@@ -216,34 +228,40 @@ const AreaCalculator = () => {
         let endPt = currentSegment[currentSegment.length - 1];
         let snapped = false;
 
-        // MAGNETIC SNAP: Check ALL existing endpoints
-        const allEndpoints = [];
+        // MAGNETIC SNAP: Collect ALL corner points (start + end of each segment)
+        const allCorners = [];
 
-        // Add start point
+        // Add the very first start point
         if (startPoint && segments.length > 0) {
-            allEndpoints.push({ point: startPoint, label: 'START' });
+            allCorners.push({ point: startPoint, label: 'START' });
         }
 
-        // Add all segment endpoints
+        // Add BOTH start and end points of all segments
         segments.forEach((seg, index) => {
             if (seg.path && seg.path.length > 0) {
-                allEndpoints.push({
+                // Start point of this segment
+                allCorners.push({
+                    point: seg.path[0],
+                    label: `Start of Side ${index + 1}`
+                });
+                // End point of this segment
+                allCorners.push({
                     point: seg.path[seg.path.length - 1],
                     label: `End of Side ${index + 1}`
                 });
             }
         });
 
-        // Check if near any endpoint
-        for (const endpoint of allEndpoints) {
+        // Check if near any corner - INCREASED RANGE to 50 pixels
+        for (const corner of allCorners) {
             const distance = Math.sqrt(
-                Math.pow(endPt.x - endpoint.point.x, 2) +
-                Math.pow(endPt.y - endpoint.point.y, 2)
+                Math.pow(endPt.x - corner.point.x, 2) +
+                Math.pow(endPt.y - corner.point.y, 2)
             );
 
-            // If within 40 pixels, snap to that point
-            if (distance < 40) {
-                endPt = endpoint.point;
+            // If within 50 pixels, snap to that corner
+            if (distance < 50) {
+                endPt = corner.point;
                 snapped = true;
                 break;
             }
