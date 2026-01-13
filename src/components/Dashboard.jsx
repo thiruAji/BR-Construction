@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Icons } from './Icons';
 import MeasurementConverter from './MeasurementConverter';
+import AreaCalculator from './AreaCalculator';
 import '../index.css';
 
 const Dashboard = ({ onSelectSite }) => {
@@ -11,6 +12,7 @@ const Dashboard = ({ onSelectSite }) => {
     const [sites, setSites] = useState([]);
     const [showAddSite, setShowAddSite] = useState(false);
     const [showConverter, setShowConverter] = useState(false);
+    const [showAreaCalculator, setShowAreaCalculator] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteLocation, setNewSiteLocation] = useState('');
     const [loading, setLoading] = useState(true);
@@ -281,10 +283,21 @@ const Dashboard = ({ onSelectSite }) => {
                     <Icons.TrendingUp size={18} style={{ transform: 'rotate(45deg)' }} />
                     {showConverter ? 'Hide' : 'Show'} Converter
                 </button>
+                <button
+                    onClick={() => setShowAreaCalculator(!showAreaCalculator)}
+                    className="btn btn-secondary"
+                    title="Toggle Area Calculator"
+                >
+                    <Icons.Building size={18} />
+                    {showAreaCalculator ? 'Hide' : 'Show'} Area Calculator
+                </button>
             </div>
 
             {/* Measurement Converter Tool */}
             {showConverter && <MeasurementConverter />}
+
+            {/* Area Calculator Tool */}
+            {showAreaCalculator && <AreaCalculator />}
 
             {/* Add Site Modal/Form */}
             {showAddSite && (
