@@ -134,6 +134,9 @@ const AreaCalculator = () => {
 
                     ctx.fillStyle = labelBg;
                     ctx.fillRect(midPoint.x - 35, midPoint.y - 14, 70, 28);
+                    ctx.strokeStyle = 'var(--primary-color)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(midPoint.x - 35, midPoint.y - 14, 70, 28);
                     ctx.fillStyle = labelColor;
                     ctx.font = 'bold 12px Inter';
                     ctx.textAlign = 'center';
