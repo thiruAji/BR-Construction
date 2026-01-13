@@ -124,8 +124,8 @@ const AreaCalculator = () => {
                 });
                 ctx.stroke();
 
-                // Draw length label
-                if (seg.length) {
+                // Draw length label ONLY if segment has a length (completed)
+                if (seg.length && parseFloat(seg.length) > 0) {
                     const midIdx = Math.floor(seg.path.length / 2);
                     const midPoint = seg.path[midIdx];
 
@@ -136,6 +136,17 @@ const AreaCalculator = () => {
                     ctx.textAlign = 'center';
                     ctx.fillText(`${seg.length} ${seg.unit}`, midPoint.x, midPoint.y + 4);
                 }
+
+                // Draw endpoint circles for magnetic snapping
+                const endPoint = seg.path[seg.path.length - 1];
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+                ctx.beginPath();
+                ctx.arc(endPoint.x, endPoint.y, 15, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'var(--accent-color)';
+                ctx.beginPath();
+                ctx.arc(endPoint.x, endPoint.y, 4, 0, 2 * Math.PI);
+                ctx.fill();
             }
         });
 
@@ -197,26 +208,42 @@ const AreaCalculator = () => {
 
         const startPt = currentSegment[0];
         let endPt = currentSegment[currentSegment.length - 1];
+        let snapped = false;
 
-        // MAGNETIC SNAP: Check if near starting point
-        if (startPoint && segments.length >= 2) {
+        // MAGNETIC SNAP: Check ALL existing endpoints
+        const allEndpoints = [];
+
+        // Add start point
+        if (startPoint && segments.length > 0) {
+            allEndpoints.push({ point: startPoint, label: 'START' });
+        }
+
+        // Add all segment endpoints
+        segments.forEach((seg, index) => {
+            if (seg.path && seg.path.length > 0) {
+                allEndpoints.push({
+                    point: seg.path[seg.path.length - 1],
+                    label: `End of Side ${index + 1}`
+                });
+            }
+        });
+
+        // Check if near any endpoint
+        for (const endpoint of allEndpoints) {
             const distance = Math.sqrt(
-                Math.pow(endPt.x - startPoint.x, 2) +
-                Math.pow(endPt.y - startPoint.y, 2)
+                Math.pow(endPt.x - endpoint.point.x, 2) +
+                Math.pow(endPt.y - endpoint.point.y, 2)
             );
 
-            // If within 30 pixels, snap to start point and auto-finish
-            if (distance < 30) {
-                endPt = startPoint;
-                const straightLine = [startPt, endPt];
-                setSegments(prev => [...prev, { path: straightLine, length: null, unit: inputUnit }]);
-                setCurrentSegment([]);
-                setShowLengthInput(true);
-                return;
+            // If within 40 pixels, snap to that point
+            if (distance < 40) {
+                endPt = endpoint.point;
+                snapped = true;
+                break;
             }
         }
 
-        // Normal straight line
+        // Create straight line
         const straightLine = [startPt, endPt];
         setSegments(prev => [...prev, { path: straightLine, length: null, unit: inputUnit }]);
         setCurrentSegment([]);
