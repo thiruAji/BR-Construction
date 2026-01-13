@@ -3,22 +3,47 @@ import { Icons } from './Icons';
 import '../index.css';
 
 const AreaCalculator = () => {
-    const [points, setPoints] = useState([]);
+    const [segments, setSegments] = useState([]); // Array of {path: [{x,y}...], length: number}
+    const [currentSegment, setCurrentSegment] = useState([]);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [showLengthInput, setShowLengthInput] = useState(false);
+    const [currentLength, setCurrentLength] = useState('');
     const [totalArea, setTotalArea] = useState(0);
-    const [scale, setScale] = useState(10); // 1 pixel = 10 feet
     const canvasRef = useRef(null);
-    const [currentPath, setCurrentPath] = useState([]);
 
-    const calculateArea = (pts) => {
-        if (pts.length < 3) return 0;
+    const calculateArea = (segmentsWithLengths) => {
+        if (segmentsWithLengths.length < 3) return 0;
 
-        // Shoelace formula for polygon area
+        // Build polygon from segments and actual lengths
+        const polygonPoints = [];
+        let currentPoint = { x: 0, y: 0 };
+        let currentAngle = 0;
+
+        segmentsWithLengths.forEach((seg, index) => {
+            polygonPoints.push({ ...currentPoint });
+
+            // Calculate angle from drawn path
+            const path = seg.path;
+            if (path.length > 1) {
+                const dx = path[path.length - 1].x - path[0].x;
+                const dy = path[path.length - 1].y - path[0].y;
+                currentAngle = Math.atan2(dy, dx);
+            }
+
+            // Move by actual length in that direction
+            const actualLength = parseFloat(seg.length) || 0;
+            currentPoint = {
+                x: currentPoint.x + actualLength * Math.cos(currentAngle),
+                y: currentPoint.y + actualLength * Math.sin(currentAngle)
+            };
+        });
+
+        // Shoelace formula
         let area = 0;
-        for (let i = 0; i < pts.length; i++) {
-            const j = (i + 1) % pts.length;
-            area += pts[i].x * pts[j].y;
-            area -= pts[j].x * pts[i].y;
+        for (let i = 0; i < polygonPoints.length; i++) {
+            const j = (i + 1) % polygonPoints.length;
+            area += polygonPoints[i].x * polygonPoints[j].y;
+            area -= polygonPoints[j].x * polygonPoints[i].y;
         }
         return Math.abs(area / 2);
     };
@@ -46,55 +71,59 @@ const AreaCalculator = () => {
             ctx.stroke();
         }
 
-        // Draw current path while drawing
-        if (currentPath.length > 0) {
-            ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+        // Draw completed segments
+        segments.forEach((seg, index) => {
+            ctx.strokeStyle = 'var(--primary-color)';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (seg.path.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(seg.path[0].x, seg.path[0].y);
+                seg.path.forEach(point => {
+                    ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+
+                // Draw length label
+                if (seg.length) {
+                    const midIdx = Math.floor(seg.path.length / 2);
+                    const midPoint = seg.path[midIdx];
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.fillRect(midPoint.x - 25, midPoint.y - 12, 50, 24);
+                    ctx.fillStyle = 'var(--success-color)';
+                    ctx.font = 'bold 12px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${seg.length} ft`, midPoint.x, midPoint.y + 4);
+                }
+            }
+        });
+
+        // Draw current segment being drawn
+        if (currentSegment.length > 0) {
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
-            ctx.moveTo(currentPath[0].x, currentPath[0].y);
-            currentPath.forEach(point => {
+            ctx.moveTo(currentSegment[0].x, currentSegment[0].y);
+            currentSegment.forEach(point => {
                 ctx.lineTo(point.x, point.y);
             });
             ctx.stroke();
-        }
-
-        // Draw completed polygon
-        if (points.length > 0 && !isDrawing) {
-            ctx.strokeStyle = 'var(--primary-color)';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
-
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
-            ctx.fill();
-            ctx.stroke();
-
-            // Draw corner points
-            points.forEach((point, index) => {
-                ctx.fillStyle = 'var(--accent-color)';
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-                ctx.fill();
-            });
         }
     };
 
     useEffect(() => {
         drawCanvas();
-    }, [points, currentPath, isDrawing]);
+    }, [segments, currentSegment]);
 
     const getCoordinates = (e) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
 
-        // Support both mouse and touch
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -108,40 +137,71 @@ const AreaCalculator = () => {
         if (!isDrawing) return;
         e.preventDefault();
         const coords = getCoordinates(e);
-        setCurrentPath([coords]);
+        setCurrentSegment([coords]);
     };
 
     const handleMove = (e) => {
-        if (!isDrawing || currentPath.length === 0) return;
+        if (!isDrawing || currentSegment.length === 0) return;
         e.preventDefault();
         const coords = getCoordinates(e);
-        setCurrentPath(prev => [...prev, coords]);
+        setCurrentSegment(prev => [...prev, coords]);
     };
 
     const handleEnd = (e) => {
-        if (!isDrawing || currentPath.length === 0) return;
+        if (!isDrawing || currentSegment.length === 0) return;
         e.preventDefault();
 
-        // Simplify path - take every Nth point for cleaner polygon
+        // Simplify path
         const simplified = [];
-        const skipFactor = Math.max(1, Math.floor(currentPath.length / 50));
-        for (let i = 0; i < currentPath.length; i += skipFactor) {
-            simplified.push(currentPath[i]);
+        const skipFactor = Math.max(1, Math.floor(currentSegment.length / 30));
+        for (let i = 0; i < currentSegment.length; i += skipFactor) {
+            simplified.push(currentSegment[i]);
         }
 
-        setPoints(simplified);
-        setCurrentPath([]);
-        setIsDrawing(false);
+        // Save segment without length first
+        setSegments(prev => [...prev, { path: simplified, length: null }]);
+        setCurrentSegment([]);
+        setShowLengthInput(true);
+    };
 
-        // Calculate area
-        const pixelArea = calculateArea(simplified);
-        const sqFeet = (pixelArea / (scale * scale));
-        setTotalArea(sqFeet);
+    const saveLengthAndContinue = () => {
+        if (!currentLength || parseFloat(currentLength) <= 0) {
+            alert('Please enter a valid length');
+            return;
+        }
+
+        // Update last segment with length
+        setSegments(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1].length = currentLength;
+            return updated;
+        });
+
+        setCurrentLength('');
+        setShowLengthInput(false);
+    };
+
+    const finishPlot = () => {
+        if (segments.length < 3) {
+            alert('Need at least 3 sides to calculate area');
+            return;
+        }
+
+        if (segments.some(seg => !seg.length)) {
+            alert('Please enter length for all sides');
+            return;
+        }
+
+        const area = calculateArea(segments);
+        setTotalArea(area);
+        setIsDrawing(false);
     };
 
     const reset = () => {
-        setPoints([]);
-        setCurrentPath([]);
+        setSegments([]);
+        setCurrentSegment([]);
+        setCurrentLength('');
+        setShowLengthInput(false);
         setTotalArea(0);
         setIsDrawing(false);
     };
@@ -163,21 +223,6 @@ const AreaCalculator = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* Scale selector */}
-                <div className="flex gap-sm" style={{ alignItems: 'center' }}>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Scale:</label>
-                    <select
-                        value={scale}
-                        onChange={(e) => setScale(Number(e.target.value))}
-                        style={{ padding: '0.5rem', borderRadius: '4px' }}
-                    >
-                        <option value={5}>1 inch = 5 feet</option>
-                        <option value={10}>1 inch = 10 feet (Default)</option>
-                        <option value={20}>1 inch = 20 feet</option>
-                        <option value={50}>1 inch = 50 feet</option>
-                    </select>
-                </div>
-
                 <canvas
                     ref={canvasRef}
                     width={600}
@@ -198,25 +243,65 @@ const AreaCalculator = () => {
                     }}
                 />
 
+                {/* Length Input Popup */}
+                {showLengthInput && (
+                    <div className="card" style={{ padding: '1.5rem', background: 'var(--accent-color)', color: 'white' }}>
+                        <h4 style={{ margin: 0, marginBottom: '1rem', color: 'white' }}>
+                            📏 Enter Length of Side {segments.length}
+                        </h4>
+                        <div className="flex gap-sm">
+                            <input
+                                type="number"
+                                value={currentLength}
+                                onChange={(e) => setCurrentLength(e.target.value)}
+                                placeholder="e.g., 25"
+                                autoFocus
+                                style={{ flex: 1 }}
+                                onKeyPress={(e) => e.key === 'Enter' && saveLengthAndContinue()}
+                            />
+                            <span style={{ alignSelf: 'center', fontWeight: 600 }}>feet</span>
+                            <button onClick={saveLengthAndContinue} className="btn btn-success">
+                                ✓ Next Side
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Status and Actions */}
                 <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                     {!isDrawing ? (
                         <button onClick={startDrawing} className="btn btn-primary">
-                            <Icons.Plus size={18} /> Draw Plot with Finger
+                            <Icons.Plus size={18} /> Start Drawing
                         </button>
                     ) : (
-                        <div style={{
-                            padding: '1rem',
-                            background: 'var(--accent-color)',
-                            color: 'white',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            flex: 1
-                        }}>
-                            ✏️ Draw the outline of your plot with your finger/mouse → Release to finish
-                        </div>
+                        <>
+                            <div style={{
+                                padding: '0.75rem 1rem',
+                                background: 'rgba(59, 130, 246, 0.1)',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                flex: 1,
+                                fontSize: '0.875rem'
+                            }}>
+                                ✏️ Side {segments.length + 1}: Draw with finger → Enter length → Continue
+                            </div>
+                            {segments.length >= 3 && !showLengthInput && (
+                                <button onClick={finishPlot} className="btn btn-success">
+                                    <Icons.Check size={18} /> Finish & Calculate
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
 
+                {/* Progress */}
+                {segments.length > 0 && isDrawing && (
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        Sides completed: {segments.filter(s => s.length).length} / {segments.length}
+                    </div>
+                )}
+
+                {/* Result */}
                 {totalArea > 0 && (
                     <div className="card" style={{ background: 'var(--success-color)', color: 'white', padding: '1.5rem' }}>
                         <h2 style={{ margin: 0, marginBottom: '0.5rem' }}>📐 Total Area</h2>
@@ -230,247 +315,7 @@ const AreaCalculator = () => {
                 )}
 
                 <div className="text-center text-secondary" style={{ fontSize: '0.75rem' }}>
-                    💡 Tip: Drag your finger/mouse to trace the plot outline. Area calculates automatically!
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default AreaCalculator;
-
-
-const AreaCalculator = () => {
-    const [points, setPoints] = useState([]);
-    const [currentLength, setCurrentLength] = useState('');
-    const [showInput, setShowInput] = useState(false);
-    const [totalArea, setTotalArea] = useState(0);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const canvasRef = useRef(null);
-
-    const calculateArea = (pts) => {
-        if (pts.length < 3) return 0;
-
-        // Shoelace formula for polygon area
-        let area = 0;
-        for (let i = 0; i < pts.length; i++) {
-            const j = (i + 1) % pts.length;
-            area += pts[i].x * pts[j].y;
-            area -= pts[j].x * pts[i].y;
-        }
-        return Math.abs(area / 2);
-    };
-
-    const drawCanvas = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw grid
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 20) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i, canvas.height);
-            ctx.stroke();
-        }
-        for (let i = 0; i < canvas.height; i += 20) {
-            ctx.beginPath();
-            ctx.moveTo(0, i);
-            ctx.lineTo(canvas.width, i);
-            ctx.stroke();
-        }
-
-        // Draw polygon
-        if (points.length > 0) {
-            ctx.strokeStyle = 'var(--primary-color)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-
-            for (let i = 1; i < points.length; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
-            }
-
-            if (points.length > 2) {
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
-                ctx.fill();
-            }
-            ctx.stroke();
-
-            // Draw points
-            points.forEach((point, index) => {
-                ctx.fillStyle = 'var(--accent-color)';
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
-                ctx.fill();
-
-                // Draw length labels
-                if (index > 0 && point.length) {
-                    const prevPoint = points[index - 1];
-                    const midX = (point.x + prevPoint.x) / 2;
-                    const midY = (point.y + prevPoint.y) / 2;
-
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(midX - 20, midY - 10, 40, 20);
-                    ctx.fillStyle = 'var(--primary-color)';
-                    ctx.font = 'bold 12px Inter';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(`${point.length}'`, midX, midY + 4);
-                }
-            });
-        }
-    };
-
-    useEffect(() => {
-        drawCanvas();
-    }, [points]);
-
-    const handleCanvasClick = (e) => {
-        if (!isDrawing) return;
-
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        if (points.length === 0) {
-            setPoints([{ x, y, length: 0 }]);
-        } else {
-            setShowInput(true);
-        }
-    };
-
-    const addPoint = () => {
-        if (!currentLength || parseFloat(currentLength) <= 0) {
-            alert('Please enter a valid length');
-            return;
-        }
-
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-
-        // For simplicity, draw in the direction of last move
-        const lastPoint = points[points.length - 1];
-        const angle = Math.random() * Math.PI * 2; // Random for demo
-        const length = parseFloat(currentLength) * 10; // Scale factor
-
-        const newX = lastPoint.x + Math.cos(angle) * length;
-        const newY = lastPoint.y + Math.sin(angle) * length;
-
-        setPoints([...points, { x: newX, y: newY, length: currentLength }]);
-        setCurrentLength('');
-        setShowInput(false);
-
-        // Calculate area
-        const newPoints = [...points, { x: newX, y: newY, length: currentLength }];
-        const area = calculateArea(newPoints);
-        setTotalArea(area);
-    };
-
-    const finishPlot = () => {
-        if (points.length < 3) {
-            alert('Need at least 3 points to calculate area');
-            return;
-        }
-
-        const area = calculateArea(points);
-        setTotalArea(area);
-        setIsDrawing(false);
-    };
-
-    const reset = () => {
-        setPoints([]);
-        setCurrentLength('');
-        setShowInput(false);
-        setTotalArea(0);
-        setIsDrawing(false);
-    };
-
-    const startDrawing = () => {
-        reset();
-        setIsDrawing(true);
-    };
-
-    return (
-        <div className="card mb-lg" style={{ background: 'linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%)' }}>
-            <div className="flex-between mb-md">
-                <h3 className="flex" style={{ alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                    <Icons.Building size={24} /> Area Calculator
-                </h3>
-                <button onClick={reset} className="btn btn-secondary btn-small">
-                    Clear All
-                </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <canvas
-                    ref={canvasRef}
-                    width={600}
-                    height={400}
-                    onClick={handleCanvasClick}
-                    style={{
-                        border: '2px solid var(--border-color)',
-                        borderRadius: '8px',
-                        cursor: isDrawing ? 'crosshair' : 'default',
-                        maxWidth: '100%',
-                        background: 'white'
-                    }}
-                />
-
-                {showInput && (
-                    <div className="card" style={{ padding: '1rem', background: 'var(--accent-color)', color: 'white' }}>
-                        <label style={{ marginBottom: '0.5rem', display: 'block' }}>Enter length (feet):</label>
-                        <div className="flex gap-sm">
-                            <input
-                                type="number"
-                                value={currentLength}
-                                onChange={(e) => setCurrentLength(e.target.value)}
-                                placeholder="e.g., 25"
-                                autoFocus
-                                style={{ flex: 1 }}
-                            />
-                            <button onClick={addPoint} className="btn btn-success">
-                                Add Line
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                    {!isDrawing ? (
-                        <button onClick={startDrawing} className="btn btn-primary">
-                            <Icons.Plus size={18} /> Start Drawing Plot
-                        </button>
-                    ) : (
-                        <>
-                            <button onClick={finishPlot} className="btn btn-success">
-                                <Icons.Check size={18} /> Finish & Calculate
-                            </button>
-                            <button onClick={reset} className="btn btn-secondary">
-                                Cancel
-                            </button>
-                        </>
-                    )}
-                </div>
-
-                {totalArea > 0 && (
-                    <div className="card" style={{ background: 'var(--success-color)', color: 'white', padding: '1.5rem' }}>
-                        <h2 style={{ margin: 0, marginBottom: '0.5rem' }}>📐 Total Area</h2>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                            {(totalArea / 100).toFixed(2)} sq.ft
-                        </div>
-                        <div style={{ fontSize: '1rem', opacity: 0.9, marginTop: '0.5rem' }}>
-                            {((totalArea / 100) * 0.0929).toFixed(2)} sq.m
-                        </div>
-                    </div>
-                )}
-
-                <div className="text-center text-secondary" style={{ fontSize: '0.75rem' }}>
-                    💡 Tip: Click on canvas to start, enter length after each line, then finish to calculate!
+                    💡 Tip: Draw each side with your finger, then enter its actual length in feet!
                 </div>
             </div>
         </div>
