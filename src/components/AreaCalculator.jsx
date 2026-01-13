@@ -11,6 +11,8 @@ const AreaCalculator = () => {
     const [totalArea, setTotalArea] = useState(0);
     const [inputUnit, setInputUnit] = useState('feet');
     const [outputUnit, setOutputUnit] = useState('sqft');
+    const [undoStack, setUndoStack] = useState([]);
+    const [redoStack, setRedoStack] = useState([]);
     const canvasRef = useRef(null);
     const [startPoint, setStartPoint] = useState(null);
 
@@ -272,6 +274,25 @@ const AreaCalculator = () => {
         setTotalArea(0);
         setIsDrawing(false);
         setStartPoint(null);
+        setUndoStack([]);
+        setRedoStack([]);
+    };
+
+    const undo = () => {
+        if (segments.length === 0) return;
+
+        const lastSegment = segments[segments.length - 1];
+        setUndoStack(prev => [...prev, lastSegment]);
+        setSegments(prev => prev.slice(0, -1));
+        setRedoStack([]);
+    };
+
+    const redo = () => {
+        if (undoStack.length === 0) return;
+
+        const segmentToRestore = undoStack[undoStack.length - 1];
+        setSegments(prev => [...prev, segmentToRestore]);
+        setUndoStack(prev => prev.slice(0, -1));
     };
 
     const startDrawing = () => {
@@ -402,6 +423,24 @@ const AreaCalculator = () => {
                             }}>
                                 ✏️ Side {segments.length + 1} | 🧲 Draw near start point to auto-close
                             </div>
+                            {segments.length > 0 && (
+                                <button
+                                    onClick={undo}
+                                    className="btn btn-secondary"
+                                    title="Undo last line"
+                                >
+                                    ↶ Undo
+                                </button>
+                            )}
+                            {undoStack.length > 0 && (
+                                <button
+                                    onClick={redo}
+                                    className="btn btn-secondary"
+                                    title="Redo last undone line"
+                                >
+                                    ↷ Redo
+                                </button>
+                            )}
                             {segments.length >= 3 && !showLengthInput && (
                                 <button onClick={finishPlot} className="btn btn-success">
                                     <Icons.Check size={18} /> Finish
