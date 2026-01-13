@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is CEO
+    function isCEO() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CEO';
+    }
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ========================================
+    // USERS COLLECTION
+    // ========================================
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || isAuthenticated();
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // SITES COLLECTION
+    // ========================================
+    match /sites/{siteId} {
+      // Anyone logged in can READ (view) all sites
+      allow read: if isAuthenticated();
+      
+      // Only CEO users can CREATE sites
+      allow create: if isCEO();
+      
+      // CEO can update/delete their own sites (full access)
+      // Members can ONLY update expenses-related fields, not CEO fields
+      allow update: if isAuthenticated() && (
+        // CEO who created the site (full update)
+        (isCEO() && resource.data.createdBy == request.auth.uid) ||
+        // Members can only update these fields: expenses, daily costs, notes
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Member' &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name', 'location', 'ceoBudget', 'ceoProjectValue', 'createdBy', 'createdByEmail']))
+      );
+      
+      allow delete: if isCEO() && resource.data.createdBy == request.auth.uid;
+      
+      // ========================================
+      // EXPENSES SUBCOLLECTION
+      // ========================================
+      match /expenses/{expenseId} {
+        // Anyone can read expenses
+        allow read: if isAuthenticated();
+        
+        // CEO and Members can create and update expenses
+        allow create, update: if isAuthenticated();
+        
+        // Only CEO creator can delete
+        allow delete: if isCEO() && 
+                       get(/databases/$(database)/documents/sites/$(siteId)).data.createdBy == request.auth.uid;
+      }
+      
+      // ========================================
+      // PAYMENTS SUBCOLLECTION
+      // ========================================
+      match /payments/{paymentId} {
+        // Anyone authenticated can read payments
+        allow read: if isAuthenticated();
+        
+        // Only CEO can create, update, delete payments
+        allow create, update, delete: if isCEO();
+      }
+      
+      // ========================================
+      // PLANS SUBCOLLECTION
+      // ========================================
+      match /plans/{planId} {
+        // Anyone authenticated can read plans
+        allow read: if isAuthenticated();
+        
+        // Anyone authenticated can create plans
+        allow create: if isAuthenticated();
+        
+        // Only creator or CEO can update/delete plans
+        allow update, delete: if isAuthenticated() && 
+          (request.auth.uid == resource.data.createdBy || isCEO());
+      }
+    }
+    
+    // ========================================
+    // AUDIT LOGS
+    // ========================================
+    match /audit_logs/{logId} {
+      // Only allow creation of audit logs
+      allow create: if isAuthenticated();
+      
+      // Only CEO can read audit logs
+      allow read: if isCEO();
+    }
+  }
+}

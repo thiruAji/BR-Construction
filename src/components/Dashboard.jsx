@@ -17,6 +17,9 @@ const Dashboard = ({ onSelectSite }) => {
     const [error, setError] = useState(null);
     const [isCEOUser, setIsCEOUser] = useState(false);
     const [upgrading, setUpgrading] = useState(false);
+    const [editingSite, setEditingSite] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editLocation, setEditLocation] = useState('');
 
     // Cross-tab communication channel
     const broadcastChannelRef = React.useRef(null);
@@ -163,6 +166,27 @@ const Dashboard = ({ onSelectSite }) => {
         } catch (error) {
             console.error("Error deleting site:", error);
             alert("❌ Failed to delete site:\n" + error.message);
+        }
+    };
+
+    const handleUpdateSite = async (siteId) => {
+        if (!editName.trim()) {
+            alert("❌ Site name cannot be empty");
+            return;
+        }
+
+        try {
+            const { updateDoc: updateDocFirestore } = await import('firebase/firestore');
+            await updateDocFirestore(doc(db, 'sites', siteId), {
+                name: editName.trim(),
+                location: editLocation.trim() || 'Not specified'
+            });
+            console.log("✅ Site updated successfully:", siteId);
+            setEditingSite(null);
+            alert("✅ Site updated successfully!");
+        } catch (error) {
+            console.error("Error updating site:", error);
+            alert("❌ Failed to update site:\n" + error.message);
         }
     };
 
@@ -359,8 +383,9 @@ const Dashboard = ({ onSelectSite }) => {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             e.preventDefault();
-                                            // Edit functionality
-                                            console.log("Edit site:", site.id);
+                                            setEditingSite(site.id);
+                                            setEditName(site.name);
+                                            setEditLocation(site.location);
                                         }}
                                         style={{
                                             background: 'var(--primary-color)',
@@ -406,10 +431,48 @@ const Dashboard = ({ onSelectSite }) => {
                                         ID: {site.id.substring(0, 8)}
                                     </div>
                                 </div>
-                                <h3 className="mb-sm" style={{ color: 'var(--primary-color)' }}>{site.name}</h3>
-                                <p className="text-secondary" style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Icons.Location size={14} /> {site.location}
-                                </p>
+                                {editingSite === site.id ? (
+                                    <div onClick={(e) => e.stopPropagation()} style={{ padding: '0.5rem 0' }}>
+                                        <input
+                                            type="text"
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder="Site name"
+                                            style={{ marginBottom: '0.5rem', width: '100%' }}
+                                            autoFocus
+                                        />
+                                        <input
+                                            type="text"
+                                            value={editLocation}
+                                            onChange={(e) => setEditLocation(e.target.value)}
+                                            placeholder="Location"
+                                            style={{ marginBottom: '0.5rem', width: '100%' }}
+                                        />
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => handleUpdateSite(site.id)}
+                                                className="btn btn-primary btn-small"
+                                                style={{ flex: 1 }}
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingSite(null)}
+                                                className="btn btn-secondary btn-small"
+                                                style={{ flex: 1 }}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h3 className="mb-sm" style={{ color: 'var(--primary-color)' }}>{site.name}</h3>
+                                        <p className="text-secondary" style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Icons.Location size={14} /> {site.location}
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
