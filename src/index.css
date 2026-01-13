@@ -387,3 +387,64 @@ th:first-child,
 td:first-child {
   min-width: 180px;
 }
+
+/* --- Mobile Responsive Fixes --- */
+@media (max-width: 768px) {
+
+  /* Fix tab navigation overflow */
+  .sticky-header .flex-between {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 1rem;
+  }
+
+  .sticky-header .flex {
+    flex-wrap: wrap;
+  }
+
+  /* Make tab buttons smaller and wrap */
+  .btn-small {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 0.75rem !important;
+    white-space: nowrap;
+  }
+
+  /* Fix action buttons layout */
+  .flex-between .flex.gap-sm {
+    flex-wrap: wrap;
+    gap: 0.5rem !important;
+  }
+
+  /* Search input full width on mobile */
+  .flex-between .flex.gap-sm>div[style*="width: 280px"],
+  .flex-between .flex.gap-sm>div[style*="position: relative"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Stack buttons vertically on very small screens */
+  @media (max-width: 480px) {
+    .flex-between .flex.gap-sm {
+      flex-direction: column;
+    }
+
+    .flex-between .flex.gap-sm button {
+      width: 100%;
+    }
+  }
+
+  /* Container padding reduction */
+  .container {
+    padding: 0 1rem;
+  }
+
+  /* Card padding reduction */
+  .card {
+    padding: 1rem;
+  }
+
+  /* Financial KPI cards stack on mobile */
+  section .card div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
