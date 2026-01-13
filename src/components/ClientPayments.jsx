@@ -45,11 +45,23 @@ const ClientPayments = ({ site, user, isCEO }) => {
             let total = 0;
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
-                // Sum the 'amount' field from each expense document
-                if (data.amount && typeof data.amount === 'number') {
-                    total += data.amount;
-                }
+                // Sum ALL numeric fields except metadata
+                Object.entries(data).forEach(([key, value]) => {
+                    // Skip metadata fields and date columns
+                    if (key === 'createdAt' || key === 'updatedAt' || key === 'createdByRole' ||
+                        key === 'lastUpdatedByRole' || key === 'cellCreators' || key === 'receiptUrl' ||
+                        key === 'receiptName' || key === 'receiptSize' || key === 'receiptType' ||
+                        key === 'uploadedAt' || key.toLowerCase().includes('date') ||
+                        key === 'item' || key === 'dailyTotal') {
+                        return;
+                    }
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                        total += numValue;
+                    }
+                });
             });
+            console.log("💰 Total expenses calculated:", total);
             setTotalExpenses(total);
         });
         return () => unsubscribe();
