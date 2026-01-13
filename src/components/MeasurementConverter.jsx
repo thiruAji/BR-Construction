@@ -107,14 +107,17 @@ const MeasurementConverter = () => {
                         onChange={(e) => onChange(e.target.value)}
                         placeholder="0"
                         style={{
-                            width: '80%',
+                            width: 'calc(100% - 16px)',
+                            maxWidth: '100px',
                             border: 'none',
                             background: 'transparent',
                             textAlign: 'center',
                             fontSize: s.fontSize,
                             fontWeight: 'bold',
                             color: '#333',
-                            outline: 'none'
+                            outline: 'none',
+                            padding: '0 8px',
+                            boxSizing: 'border-box'
                         }}
                         step="any"
                     />
