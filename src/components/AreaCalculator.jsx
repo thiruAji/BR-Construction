@@ -173,13 +173,19 @@ const AreaCalculator = () => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
 
+        // Support both mouse and touch
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
-        };
+        // Calculate the scale factor (canvas might be scaled down on mobile)
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        // Get coordinates relative to canvas, then scale to actual canvas coordinates
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+
+        return { x, y };
     };
 
     const handleStart = (e) => {
