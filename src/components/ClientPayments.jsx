@@ -106,7 +106,10 @@ const ClientPayments = ({ site, user, isCEO }) => {
             alert("✅ Payment added successfully!");
         } catch (err) {
             console.error("Error adding payment:", err);
-            alert("❌ Failed to add payment");
+            const errorMsg = err.code === 'permission-denied'
+                ? "❌ Permission denied. Check Firestore security rules for 'payments' collection."
+                : `❌ Failed to add payment: ${err.message}`;
+            alert(errorMsg);
         }
     };
 
@@ -174,18 +177,18 @@ const ClientPayments = ({ site, user, isCEO }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                         <div>
                             <p style={{ opacity: 0.9, fontSize: '0.875rem', margin: '0 0 4px 0' }}>Contract Value</p>
-                            <h2 style={{ margin: 0 }}>{formatCurrency(contractValue)}</h2>
+                            <h2 style={{ margin: 0, color: 'white' }}>{formatCurrency(contractValue)}</h2>
                         </div>
                         <div>
                             <p style={{ opacity: 0.9, fontSize: '0.875rem', margin: '0 0 4px 0' }}>Total Received</p>
-                            <h2 style={{ margin: 0 }}>{formatCurrency(totalReceived)} <span style={{ fontSize: '1rem', opacity: 0.8 }}>({receivedPercentage}%)</span></h2>
+                            <h2 style={{ margin: 0, color: 'white' }}>{formatCurrency(totalReceived)} <span style={{ fontSize: '1rem', opacity: 0.8 }}>({receivedPercentage}%)</span></h2>
                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.3)', borderRadius: '3px', marginTop: '8px' }}>
                                 <div style={{ height: '100%', background: 'white', width: `${receivedPercentage}%`, borderRadius: '3px', transition: 'width 0.3s' }}></div>
                             </div>
                         </div>
                         <div>
                             <p style={{ opacity: 0.9, fontSize: '0.875rem', margin: '0 0 4px 0' }}>Balance Due</p>
-                            <h2 style={{ margin: 0 }}>{formatCurrency(balanceDue)}</h2>
+                            <h2 style={{ margin: 0, color: 'white' }}>{formatCurrency(balanceDue)}</h2>
                         </div>
                     </div>
                 )}
