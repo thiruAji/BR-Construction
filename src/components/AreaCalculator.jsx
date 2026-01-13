@@ -6,8 +6,7 @@ const AreaCalculator = () => {
     const [segments, setSegments] = useState([]);
     const [currentSegment, setCurrentSegment] = useState([]);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [showLengthInput, setShowLengthInput] = useState(false);
-    const [currentLength, setCurrentLength] = useState('');
+    const [showDimensionReview, setShowDimensionReview] = useState(false);
     const [totalArea, setTotalArea] = useState(0);
     const [inputUnit, setInputUnit] = useState('feet');
     const [outputUnit, setOutputUnit] = useState('sqft');
@@ -15,6 +14,7 @@ const AreaCalculator = () => {
     const [redoStack, setRedoStack] = useState([]);
     const canvasRef = useRef(null);
     const [startPoint, setStartPoint] = useState(null);
+    const [editingIndex, setEditingIndex] = useState(null);
 
     // Unit conversions to feet
     const toFeet = (value, unit) => {
@@ -111,8 +111,8 @@ const AreaCalculator = () => {
 
         // Draw completed segments
         segments.forEach((seg, index) => {
-            ctx.strokeStyle = 'var(--primary-color)';
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = editingIndex === index ? 'var(--accent-color)' : 'var(--primary-color)';
+            ctx.lineWidth = editingIndex === index ? 4 : 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
@@ -124,21 +124,23 @@ const AreaCalculator = () => {
                 });
                 ctx.stroke();
 
-                // Draw length label ONLY if segment has a length (completed)
+                // Draw length label if dimension is set
                 if (seg.length && parseFloat(seg.length) > 0) {
                     const midIdx = Math.floor(seg.path.length / 2);
                     const midPoint = seg.path[midIdx];
 
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                    ctx.fillRect(midPoint.x - 30, midPoint.y - 12, 60, 24);
-                    ctx.fillStyle = 'var(--success-color)';
-                    ctx.font = 'bold 11px Inter';
+                    const labelBg = editingIndex === index ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.95)';
+                    const labelColor = editingIndex === index ? 'white' : 'var(--success-color)';
+
+                    ctx.fillStyle = labelBg;
+                    ctx.fillRect(midPoint.x - 35, midPoint.y - 14, 70, 28);
+                    ctx.fillStyle = labelColor;
+                    ctx.font = 'bold 12px Inter';
                     ctx.textAlign = 'center';
                     ctx.fillText(`${seg.length} ${seg.unit}`, midPoint.x, midPoint.y + 4);
                 }
 
-                // Draw BOTH start and end point magnetic targets
-                // Start point (first point of segment)
+                // Draw corner points for magnetic snapping
                 const startPt = seg.path[0];
                 ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
                 ctx.beginPath();
@@ -149,7 +151,6 @@ const AreaCalculator = () => {
                 ctx.arc(startPt.x, startPt.y, 5, 0, 2 * Math.PI);
                 ctx.fill();
 
-                // End point (last point of segment)
                 const endPt = seg.path[seg.path.length - 1];
                 ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
                 ctx.beginPath();
@@ -179,21 +180,18 @@ const AreaCalculator = () => {
 
     useEffect(() => {
         drawCanvas();
-    }, [segments, currentSegment, startPoint]);
+    }, [segments, currentSegment, startPoint, editingIndex]);
 
     const getCoordinates = (e) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
 
-        // Support both mouse and touch
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        // Calculate the scale factor (canvas might be scaled down on mobile)
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
-        // Get coordinates relative to canvas, then scale to actual canvas coordinates
         const x = (clientX - rect.left) * scaleX;
         const y = (clientY - rect.top) * scaleY;
 
@@ -205,7 +203,6 @@ const AreaCalculator = () => {
         e.preventDefault();
         const coords = getCoordinates(e);
 
-        // Save first point as start point for magnetic snap
         if (segments.length === 0) {
             setStartPoint(coords);
         }
@@ -226,121 +223,84 @@ const AreaCalculator = () => {
 
         const startPt = currentSegment[0];
         let endPt = currentSegment[currentSegment.length - 1];
-        let snapped = false;
 
-        // MAGNETIC SNAP: Collect ALL corner points (start + end of each segment)
+        // MAGNETIC SNAP to all corners
         const allCorners = [];
-
-        // Add the very first start point
         if (startPoint && segments.length > 0) {
-            allCorners.push({ point: startPoint, label: 'START' });
+            allCorners.push({ point: startPoint });
         }
-
-        // Add BOTH start and end points of all segments
-        segments.forEach((seg, index) => {
+        segments.forEach((seg) => {
             if (seg.path && seg.path.length > 0) {
-                // Start point of this segment
-                allCorners.push({
-                    point: seg.path[0],
-                    label: `Start of Side ${index + 1}`
-                });
-                // End point of this segment
-                allCorners.push({
-                    point: seg.path[seg.path.length - 1],
-                    label: `End of Side ${index + 1}`
-                });
+                allCorners.push({ point: seg.path[0] });
+                allCorners.push({ point: seg.path[seg.path.length - 1] });
             }
         });
 
-        // Check if near any corner - INCREASED RANGE to 50 pixels
         for (const corner of allCorners) {
             const distance = Math.sqrt(
                 Math.pow(endPt.x - corner.point.x, 2) +
                 Math.pow(endPt.y - corner.point.y, 2)
             );
-
-            // If within 50 pixels, snap to that corner
             if (distance < 50) {
                 endPt = corner.point;
-                snapped = true;
                 break;
             }
         }
 
-        // Create straight line
         const straightLine = [startPt, endPt];
-        setSegments(prev => [...prev, { path: straightLine, length: null, unit: inputUnit }]);
+        setSegments(prev => [...prev, { path: straightLine, length: '', unit: inputUnit }]);
         setCurrentSegment([]);
-        setShowLengthInput(true);
     };
 
-    const saveLengthAndContinue = () => {
-        if (!currentLength || parseFloat(currentLength) <= 0) {
-            alert('Please enter a valid length');
-            return;
-        }
-
-        setSegments(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1].length = currentLength;
-            updated[updated.length - 1].unit = inputUnit;
-            return updated;
-        });
-
-        setCurrentLength('');
-        setShowLengthInput(false);
-
-        // Check if closed (last segment ends at start point)
-        const lastSeg = segments[segments.length - 1];
-        if (lastSeg && lastSeg.path.length > 1) {
-            const lastPoint = lastSeg.path[lastSeg.path.length - 1];
-            if (startPoint && Math.abs(lastPoint.x - startPoint.x) < 5 && Math.abs(lastPoint.y - startPoint.y) < 5) {
-                // Auto-finish when closed
-                setTimeout(() => finishPlot(), 300);
-            }
-        }
-    };
-
-    const finishPlot = () => {
+    const finishDrawing = () => {
         if (segments.length < 3) {
             alert('Need at least 3 sides to calculate area');
             return;
         }
+        setIsDrawing(false);
+        setShowDimensionReview(true);
+    };
 
-        if (segments.some(seg => !seg.length)) {
-            alert('Please enter length for all sides');
+    const updateDimension = (index, value) => {
+        setSegments(prev => {
+            const updated = [...prev];
+            updated[index].length = value;
+            return updated;
+        });
+    };
+
+    const calculateFinalArea = () => {
+        if (segments.some(seg => !seg.length || parseFloat(seg.length) <= 0)) {
+            alert('Please enter valid lengths for all sides');
             return;
         }
 
         const areaSqFt = calculateArea(segments);
         setTotalArea(areaSqFt);
-        setIsDrawing(false);
+        setShowDimensionReview(false);
     };
 
     const reset = () => {
         setSegments([]);
         setCurrentSegment([]);
-        setCurrentLength('');
-        setShowLengthInput(false);
         setTotalArea(0);
         setIsDrawing(false);
+        setShowDimensionReview(false);
         setStartPoint(null);
         setUndoStack([]);
         setRedoStack([]);
+        setEditingIndex(null);
     };
 
     const undo = () => {
         if (segments.length === 0) return;
-
         const lastSegment = segments[segments.length - 1];
         setUndoStack(prev => [...prev, lastSegment]);
         setSegments(prev => prev.slice(0, -1));
-        setRedoStack([]);
     };
 
     const redo = () => {
         if (undoStack.length === 0) return;
-
         const segmentToRestore = undoStack[undoStack.length - 1];
         setSegments(prev => [...prev, segmentToRestore]);
         setUndoStack(prev => prev.slice(0, -1));
@@ -352,22 +312,12 @@ const AreaCalculator = () => {
     };
 
     const getUnitLabel = (unit) => {
-        const labels = {
-            feet: 'feet',
-            meter: 'meters (m)',
-            cm: 'centimeters (cm)',
-            inch: 'inches (in)'
-        };
+        const labels = { feet: 'feet', meter: 'meters (m)', cm: 'centimeters (cm)', inch: 'inches (in)' };
         return labels[unit];
     };
 
     const getOutputUnitLabel = (unit) => {
-        const labels = {
-            sqft: 'sq.ft',
-            sqm: 'sq.m',
-            cent: 'cent',
-            acre: 'acre'
-        };
+        const labels = { sqft: 'sq.ft', sqm: 'sq.m', cent: 'cent', acre: 'acre' };
         return labels[unit];
     };
 
@@ -434,35 +384,42 @@ const AreaCalculator = () => {
                     }}
                 />
 
-                {showLengthInput && (
-                    <div className="card" style={{ padding: '1.5rem', background: 'var(--accent-color)', color: 'white' }}>
-                        <h4 style={{ margin: 0, marginBottom: '1rem', color: 'white' }}>
-                            📏 Enter Length of Side {segments.length}
+                {/* Dimension Review Panel */}
+                {showDimensionReview && (
+                    <div className="card" style={{ padding: '1.5rem', background: 'white', border: '2px solid var(--primary-color)' }}>
+                        <h4 style={{ margin: 0, marginBottom: '1rem', color: 'var(--primary-color)' }}>
+                            📏 Review & Edit Dimensions
                         </h4>
-                        <div className="flex gap-sm">
-                            <input
-                                type="number"
-                                value={currentLength}
-                                onChange={(e) => setCurrentLength(e.target.value)}
-                                placeholder="e.g., 25"
-                                autoFocus
-                                style={{ flex: 1 }}
-                                onKeyPress={(e) => e.key === 'Enter' && saveLengthAndContinue()}
-                            />
-                            <span style={{ alignSelf: 'center', fontWeight: 600 }}>{getUnitLabel(inputUnit)}</span>
-                            <button onClick={saveLengthAndContinue} className="btn btn-success">
-                                ✓ Next
-                            </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto' }}>
+                            {segments.map((seg, index) => (
+                                <div key={index} className="flex gap-sm" style={{ alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 600, minWidth: '70px' }}>Side {index + 1}:</span>
+                                    <input
+                                        type="number"
+                                        value={seg.length}
+                                        onChange={(e) => updateDimension(index, e.target.value)}
+                                        onFocus={() => setEditingIndex(index)}
+                                        onBlur={() => setEditingIndex(null)}
+                                        placeholder="Enter length"
+                                        style={{ flex: 1, padding: '0.5rem' }}
+                                    />
+                                    <span style={{ minWidth: '80px' }}>{getUnitLabel(inputUnit)}</span>
+                                </div>
+                            ))}
                         </div>
+                        <button onClick={calculateFinalArea} className="btn btn-success" style={{ marginTop: '1rem', width: '100%' }}>
+                            <Icons.Check size={18} /> Calculate Area
+                        </button>
                     </div>
                 )}
 
+                {/* Action Buttons */}
                 <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                    {!isDrawing ? (
+                    {!isDrawing && !showDimensionReview && !totalArea ? (
                         <button onClick={startDrawing} className="btn btn-primary">
                             <Icons.Plus size={18} /> Start Drawing
                         </button>
-                    ) : (
+                    ) : isDrawing ? (
                         <>
                             <div style={{
                                 padding: '0.75rem 1rem',
@@ -472,41 +429,28 @@ const AreaCalculator = () => {
                                 flex: 1,
                                 fontSize: '0.875rem'
                             }}>
-                                ✏️ Side {segments.length + 1} | 🧲 Draw near start point to auto-close
+                                ✏️ Draw sides | 🧲 Snap to corners | Sides: {segments.length}
                             </div>
                             {segments.length > 0 && (
-                                <button
-                                    onClick={undo}
-                                    className="btn btn-secondary"
-                                    title="Undo last line"
-                                >
+                                <button onClick={undo} className="btn btn-secondary" title="Undo last line">
                                     ↶ Undo
                                 </button>
                             )}
                             {undoStack.length > 0 && (
-                                <button
-                                    onClick={redo}
-                                    className="btn btn-secondary"
-                                    title="Redo last undone line"
-                                >
+                                <button onClick={redo} className="btn btn-secondary" title="Redo">
                                     ↷ Redo
                                 </button>
                             )}
-                            {segments.length >= 3 && !showLengthInput && (
-                                <button onClick={finishPlot} className="btn btn-success">
-                                    <Icons.Check size={18} /> Finish
+                            {segments.length >= 3 && (
+                                <button onClick={finishDrawing} className="btn btn-success">
+                                    <Icons.Check size={18} /> Done Drawing
                                 </button>
                             )}
                         </>
-                    )}
+                    ) : null}
                 </div>
 
-                {segments.length > 0 && isDrawing && (
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                        Sides: {segments.filter(s => s.length).length} / {segments.length}
-                    </div>
-                )}
-
+                {/* Result */}
                 {totalArea > 0 && (
                     <div className="card" style={{ background: 'var(--success-color)', color: 'white', padding: '1.5rem' }}>
                         <h2 style={{ margin: 0, marginBottom: '0.5rem' }}>📐 Total Area</h2>
@@ -520,7 +464,7 @@ const AreaCalculator = () => {
                 )}
 
                 <div className="text-center text-secondary" style={{ fontSize: '0.75rem' }}>
-                    💡 Tip: Draw each side, enter length, repeat. Draw near start to auto-close!
+                    💡 Tip: Draw all sides first, then enter dimensions, finally calculate area!
                 </div>
             </div>
         </div>
