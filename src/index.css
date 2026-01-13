@@ -338,3 +338,52 @@ tr:hover td {
   background-color: var(--accent-color);
   transition: width 0.5s ease;
 }
+
+/* --- Mobile Table Improvements --- */
+.table-container {
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on iOS */
+}
+
+/* Better scrollbar for mobile */
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+table {
+  min-width: 900px;
+  /* Prevents crushing on mobile, enables horizontal scroll */
+}
+
+th {
+  white-space: nowrap;
+  /* Prevent header text wrapping */
+  min-width: 100px;
+}
+
+td {
+  min-width: 100px;
+}
+
+/* Ensure date column is fully visible */
+th:nth-child(2),
+td:nth-child(2) {
+  min-width: 150px;
+  /* Increased for full date visibility on mobile */
+}
+
+/* Item description needs more space */
+th:first-child,
+td:first-child {
+  min-width: 180px;
+}

@@ -58,14 +58,16 @@ const ExpenseCell = React.memo(({ rowId, colId, value, type, onUpdate, isReadOnl
             title={isReadOnly ? '🔒 CEO-managed field (Read-only)' : ''}
             style={{
                 width: '100%',
+                minWidth: colId === 'date' ? '135px' : 'auto', // Extra width for dates
                 background: isReadOnly ? 'rgba(100, 116, 139, 0.08)' : 'transparent',
                 border: 'none',
-                padding: '4px 0',
+                padding: '4px 8px', // Increased padding
                 cursor: isReadOnly ? 'not-allowed' : 'text',
                 opacity: isReadOnly ? 0.6 : 1,
                 fontSize: '0.9375rem',
                 color: isReadOnly ? 'var(--text-muted)' : 'var(--text-main)',
-                fontWeight: isReadOnly ? 600 : 400
+                fontWeight: isReadOnly ? 600 : 400,
+                boxSizing: 'border-box'
             }}
         />
     );
