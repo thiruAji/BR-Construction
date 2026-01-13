@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Icons } from './Icons';
 import MeasurementConverter from './MeasurementConverter';
 import '../index.css';
@@ -176,8 +176,7 @@ const Dashboard = ({ onSelectSite }) => {
         }
 
         try {
-            const { updateDoc: updateDocFirestore } = await import('firebase/firestore');
-            await updateDocFirestore(doc(db, 'sites', siteId), {
+            await updateDoc(doc(db, 'sites', siteId), {
                 name: editName.trim(),
                 location: editLocation.trim() || 'Not specified'
             });
