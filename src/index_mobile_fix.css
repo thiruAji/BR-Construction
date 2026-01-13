@@ -1,0 +1,40 @@
+/* Item description needs more space */
+th:first-child,
+td:first-child {
+    min-width: 180px;
+}
+
+/* --- Mobile Responsive Fixes --- */
+/* Prevent horizontal page scroll on mobile */
+@media (max-width: 768px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .container {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Tabs wrap to fit screen */
+    .flex.gap-sm {
+        flex-wrap: wrap !important;
+    }
+
+    /* Smaller tab buttons */
+    .btn-small {
+        font-size: 0.7rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+
+    /* Search and action buttons */
+    .flex-between {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    /* Card padding */
+    .card {
+        padding: 1rem;
+    }
+}

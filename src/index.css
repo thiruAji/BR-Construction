@@ -391,6 +391,12 @@ td:first-child {
 /* --- Mobile Responsive Fixes --- */
 @media (max-width: 768px) {
 
+  /* Prevent whole page from scrolling horizontally */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+
   /* Fix tab navigation overflow */
   .sticky-header .flex-between {
     flex-direction: column;
