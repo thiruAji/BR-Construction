@@ -245,11 +245,93 @@ tr:hover td {
   align-items: center;
 }
 
-.flex-center {
+/* Tiled Background for Login */
+.tiled-background {
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  background-color: #f1f5f9;
 }
+
+.tiled-background::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('./assets/construction_pattern_tile.png');
+  background-repeat: repeat;
+  background-size: 400px;
+  /* Adjust size of the pattern */
+  opacity: 0.15;
+  /* Subtle pattern */
+  z-index: 0;
+}
+
+/* Glass Card Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+}
+
+
+/* Split Layout for Login */
+.split-screen {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.split-image {
+  display: none;
+  background-color: #f1f5f9;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.split-image img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
+}
+
+.split-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background: white;
+}
+
+@media (min-width: 1024px) {
+  .split-screen {
+    grid-template-columns: 1.2fr 1fr;
+  }
+
+  .split-image {
+    display: flex;
+  }
+}
+
 
 .gap-sm {
   gap: 0.5rem;

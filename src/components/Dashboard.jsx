@@ -6,6 +6,7 @@ import { Icons } from './Icons';
 import MeasurementConverter from './MeasurementConverter';
 import AreaCalculator from './AreaCalculator';
 import '../index.css';
+import constructionEmpty from '../assets/construction_empty_state.png';
 
 const Dashboard = ({ onSelectSite }) => {
     const { user, logout, isCEO, upgradeToCEO } = useAuth();
@@ -503,10 +504,10 @@ const Dashboard = ({ onSelectSite }) => {
             {/* Empty State */}
             {!loading && sites.length === 0 && (
                 <div className="flex-center" style={{ minHeight: '40vh', flexDirection: 'column', textAlign: 'center' }}>
-                    <div style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                        <Icons.Building size={64} opacity={0.2} />
+                    <div style={{ marginBottom: '1.5rem', maxWidth: '300px' }}>
+                        <img src={constructionEmpty} alt="No Projects" style={{ width: '100%', opacity: 0.9 }} />
                     </div>
-                    <h3 className="text-secondary">No Projects Found</h3>
+                    <h3 className="text-secondary" style={{ marginTop: '-1rem', position: 'relative', zIndex: 1 }}>No Projects Found</h3>
                     <p className="text-muted mb-md">Get started by creating your first construction project.</p>
                     {isCEOUser && (
                         <button onClick={() => setShowAddSite(true)} className="btn btn-primary">

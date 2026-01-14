@@ -87,62 +87,69 @@ const Login = () => {
     };
 
     return (
-        <div className="flex-center" style={{ minHeight: '100vh', padding: '1rem', background: 'var(--bg-main)' }}>
-            {/* Firebase Configuration Error */}
-            {firebaseError && (
-                <div className="card fade-in" style={{ maxWidth: '500px', width: '100%', border: '2px solid var(--danger-color)', marginBottom: '2rem' }}>
-                    <h2 style={{ color: 'var(--danger-color)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icons.Alert size={24} /> Configuration Required
-                    </h2>
-                    <p style={{ marginBottom: '1rem' }}>
-                        The application requires Firebase credentials to function. Please set up your <code>.env</code> file with the following keys:
-                    </p>
-                    <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontFamily: 'monospace', fontSize: '0.85rem', overflowX: 'auto', border: '1px solid var(--border-color)' }}>
-                        <pre style={{ margin: 0 }}>
-                            {`VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
-VITE_ADMIN_SIGNUP_CODE=...`}
-                        </pre>
+        <div className="tiled-background">
+            <div className="glass-card fade-in">
+                {/* Firebase Configuration Error */}
+                {firebaseError && (
+                    <div style={{ border: '2px solid var(--danger-color)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', background: '#fef2f2' }}>
+                        <h3 style={{ color: 'var(--danger-color)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem' }}>
+                            <Icons.Alert size={20} /> Configuration Required
+                        </h3>
+                        <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--danger-color)' }}>
+                            Missing Firebase credentials in <code>.env</code> file.
+                        </p>
+                        <button
+                            onClick={() => setFirebaseError(false)}
+                            className="btn btn-secondary"
+                            style={{ width: '100%', padding: '0.5rem' }}
+                        >
+                            Retry Connection
+                        </button>
                     </div>
-                    <button
-                        onClick={() => setFirebaseError(false)}
-                        className="btn btn-secondary"
-                        style={{ width: '100%' }}
-                    >
-                        I've configured it, refresh app
-                    </button>
-                </div>
-            )}
+                )}
 
-            <div className="card fade-in" style={{ maxWidth: '420px', width: '100%', padding: '2.5rem' }}>
                 <div className="text-center mb-lg">
-                    <div style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>
-                        <Icons.Construction size={48} />
+                    <div style={{ color: 'var(--primary-color)', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ background: 'var(--bg-main)', padding: '1rem', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}>
+                            <Icons.Construction size={48} />
+                        </div>
                     </div>
-                    <h1 style={{ marginBottom: '0.5rem', fontSize: '1.75rem' }}>BR CONSTRUCTION</h1>
-                    <p className="text-secondary">
-                        {isSignup ? 'Create your professional account' : 'Sign in to your project dashboard'}
+                    <h1 style={{ marginBottom: '0.5rem', fontSize: '2rem', letterSpacing: '-0.03em', color: 'var(--primary-dark)' }}>BR CONSTRUCTION</h1>
+                    <p className="text-secondary" style={{ fontSize: '1rem' }}>
+                        {isSignup ? 'Join the team and start building.' : 'Welcome back to the site.'}
                     </p>
                 </div>
 
                 {/* Auth Method Toggle */}
-                <div className="flex mb-lg" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '4px', border: '1px solid var(--border-color)' }}>
+                <div className="flex mb-lg" style={{ background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', padding: '4px' }}>
                     <button
                         type="button"
-                        className={`btn ${authMethod === 'email' ? 'btn-primary' : ''}`}
-                        style={{ flex: 1, background: authMethod === 'email' ? '' : 'transparent', boxShadow: 'none', color: authMethod === 'email' ? 'white' : 'var(--text-secondary)' }}
+                        className={`btn`}
+                        style={{
+                            flex: 1,
+                            background: authMethod === 'email' ? 'white' : 'transparent',
+                            boxShadow: authMethod === 'email' ? 'var(--shadow-sm)' : 'none',
+                            color: authMethod === 'email' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            fontWeight: 600
+                        }}
                         onClick={() => { setAuthMethod('email'); setError(''); }}
                     >
                         Email
                     </button>
                     <button
                         type="button"
-                        className={`btn ${authMethod === 'phone' ? 'btn-primary' : ''}`}
-                        style={{ flex: 1, background: authMethod === 'phone' ? '' : 'transparent', boxShadow: 'none', color: authMethod === 'phone' ? 'white' : 'var(--text-secondary)' }}
+                        className={`btn`}
+                        style={{
+                            flex: 1,
+                            background: authMethod === 'phone' ? 'white' : 'transparent',
+                            boxShadow: authMethod === 'phone' ? 'var(--shadow-sm)' : 'none',
+                            color: authMethod === 'phone' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            fontWeight: 600
+                        }}
                         onClick={() => { setAuthMethod('phone'); setError(''); }}
                     >
                         Phone
@@ -152,17 +159,18 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                 {authMethod === 'email' && (
                     <form onSubmit={handleEmailAuth}>
                         <div className="input-group">
-                            <label>Email Address</label>
+                            <label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Email Address</label>
                             <input
                                 type="email"
                                 placeholder="name@company.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                style={{ padding: '0.75rem 1rem', background: '#f8fafc' }}
                             />
                         </div>
                         <div className="input-group">
-                            <label>Password</label>
+                            <label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Password</label>
                             <div style={{ position: 'relative' }}>
                                 <input
                                     type={showPassword ? "text" : "password"}
@@ -170,7 +178,7 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    style={{ paddingRight: '40px' }}
+                                    style={{ paddingRight: '40px', padding: '0.75rem 1rem', paddingRight: '40px', background: '#f8fafc' }}
                                 />
                                 <button
                                     type="button"
@@ -199,13 +207,14 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                                     placeholder="Enter code for administrative access"
                                     value={secretCode}
                                     onChange={(e) => setSecretCode(e.target.value)}
+                                    style={{ padding: '0.75rem 1rem', background: '#f8fafc' }}
                                 />
                             </div>
                         )}
 
                         {error && <div className="text-danger mb-md" style={{ fontSize: '0.875rem' }}>{error}</div>}
 
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', padding: '0.875rem', fontWeight: 600 }} disabled={loading}>
                             {loading ? <span className="loading-spinner-small"></span> : (isSignup ? 'Create Account' : 'Sign In')}
                         </button>
                     </form>
@@ -214,20 +223,21 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                 {authMethod === 'phone' && step === 'input' && (
                     <form onSubmit={handlePhoneSend}>
                         <div className="input-group">
-                            <label>Phone Number</label>
+                            <label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Phone Number</label>
                             <input
                                 type="tel"
                                 placeholder="+91 98765 43210"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 required
+                                style={{ padding: '0.75rem 1rem', background: '#f8fafc' }}
                             />
                         </div>
                         <div id="recaptcha-container" style={{ marginBottom: '1rem' }}></div>
 
                         {error && <div className="text-danger mb-md" style={{ fontSize: '0.875rem' }}>{error}</div>}
 
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.875rem', fontWeight: 600 }} disabled={loading}>
                             {loading ? <span className="loading-spinner-small"></span> : 'Send Verification Code'}
                         </button>
                     </form>
@@ -236,20 +246,20 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                 {authMethod === 'phone' && step === 'verify' && (
                     <form onSubmit={handlePhoneVerify}>
                         <div className="input-group">
-                            <label>Verification Code</label>
+                            <label style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Verification Code</label>
                             <input
                                 type="text"
                                 placeholder="000000"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
                                 required
-                                style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.25rem', fontWeight: 700 }}
+                                style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.25rem', fontWeight: 700, padding: '0.75rem', background: '#f8fafc' }}
                             />
                         </div>
 
                         {error && <div className="text-danger mb-md" style={{ fontSize: '0.875rem' }}>{error}</div>}
 
-                        <button type="submit" className="btn btn-success" style={{ width: '100%' }} disabled={loading}>
+                        <button type="submit" className="btn btn-success" style={{ width: '100%', padding: '0.875rem', fontWeight: 600 }} disabled={loading}>
                             {loading ? <span className="loading-spinner-small"></span> : 'Verify & Sign In'}
                         </button>
                         <button
@@ -267,7 +277,7 @@ VITE_ADMIN_SIGNUP_CODE=...`}
                     <div className="text-center mt-lg">
                         <button
                             className="text-primary"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9375rem', fontWeight: 600 }}
                             onClick={() => setIsSignup(!isSignup)}
                         >
                             {isSignup ? 'Already have an account? Sign In' : 'Need an account? Create one'}
