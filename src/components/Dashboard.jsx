@@ -6,6 +6,7 @@ import { Icons } from './Icons';
 import MeasurementConverter from './MeasurementConverter';
 import AreaCalculator from './AreaCalculator';
 import BrickCalculator from './BrickCalculator';
+import ConcreteCalculator from './ConcreteCalculator';
 import '../index.css';
 import constructionEmpty from '../assets/construction_empty_state.png';
 
@@ -264,6 +265,14 @@ const Dashboard = ({ onSelectSite }) => {
                     <Icons.Brick size={16} style={{ marginRight: '6px' }} />
                     Brick Calculator
                 </button>
+                <button
+                    onClick={() => setActiveTab('concrete')}
+                    className={`btn btn-small ${activeTab === 'concrete' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.Layers size={16} style={{ marginRight: '6px' }} />
+                    Concrete Calculator
+                </button>
             </div>
 
             {/* MAIN CONTENT AREA BASED ON TAB */}
@@ -508,6 +517,13 @@ const Dashboard = ({ onSelectSite }) => {
             {activeTab === 'brick' && (
                 <div className="fade-in">
                     <BrickCalculator />
+                </div>
+            )}
+
+            {/* 5. CONCRETE CALCULATOR TAB */}
+            {activeTab === 'concrete' && (
+                <div className="fade-in">
+                    <ConcreteCalculator />
                 </div>
             )}
 

@@ -536,3 +536,132 @@ td:first-child {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* --- Measurement Converter Responsive --- */
+.converter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem 1rem;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.converter-row {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.circle-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+  /* Ensure above SVG lines */
+}
+
+.circle-input {
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.circle-input:hover {
+  transform: scale(1.05);
+}
+
+.circle-input label {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.circle-input input {
+  border: none !important;
+  background: transparent !important;
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  width: 80%;
+}
+
+/* Default Sizes */
+.circle-size-large {
+  width: 140px;
+  height: 140px;
+}
+
+.circle-size-large label {
+  font-size: 0.9rem;
+}
+
+.circle-size-large input {
+  font-size: 1.5rem;
+}
+
+.circle-size-medium {
+  width: 110px;
+  height: 110px;
+}
+
+.circle-size-medium label {
+  font-size: 0.8rem;
+}
+
+.circle-size-medium input {
+  font-size: 1.2rem;
+}
+
+/* Mobile Sizes (< 480px) */
+@media (max-width: 480px) {
+  .converter-row {
+    gap: 0.75rem;
+    /* Reduce gap significantly */
+  }
+
+  .circle-size-large {
+    width: 100px;
+    height: 100px;
+  }
+
+  .circle-size-large label {
+    font-size: 0.8rem;
+  }
+
+  .circle-size-large input {
+    font-size: 1.2rem;
+  }
+
+  .circle-size-medium {
+    width: 80px;
+    height: 80px;
+  }
+
+  .circle-size-medium label {
+    font-size: 0.7rem;
+  }
+
+  .circle-size-medium input {
+    font-size: 1rem;
+  }
+
+  .converter-container {
+    padding: 1.5rem 0.5rem;
+  }
+}

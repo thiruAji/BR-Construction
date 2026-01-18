@@ -73,32 +73,13 @@ const MeasurementConverter = () => {
     };
 
     const CircleInput = ({ label, value, onChange, color, size = 'medium' }) => {
-        const sizes = {
-            large: { width: '140px', height: '140px', fontSize: '1.5rem', labelSize: '0.9rem' },
-            medium: { width: '110px', height: '110px', fontSize: '1.2rem', labelSize: '0.8rem' }
-        };
-        const s = sizes[size];
-
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{
-                    width: s.width,
-                    height: s.height,
-                    borderRadius: '50%',
-                    background: 'white',
-                    border: `3px solid ${color}`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    transition: 'all 0.2s',
-                    cursor: 'pointer'
-                }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            <div className="circle-wrapper">
+                <div
+                    className={`circle-input circle-size-${size}`}
+                    style={{ border: `3px solid ${color}` }}
                 >
-                    <label style={{ fontSize: s.labelSize, fontWeight: 'bold', color: color, marginBottom: '4px' }}>
+                    <label style={{ color: color }}>
                         {label}
                     </label>
                     <input
@@ -106,19 +87,6 @@ const MeasurementConverter = () => {
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder="0"
-                        style={{
-                            width: 'calc(100% - 16px)',
-                            maxWidth: '100px',
-                            border: 'none',
-                            background: 'transparent',
-                            textAlign: 'center',
-                            fontSize: s.fontSize,
-                            fontWeight: 'bold',
-                            color: '#333',
-                            outline: 'none',
-                            padding: '0 8px',
-                            boxSizing: 'border-box'
-                        }}
                         step="any"
                     />
                 </div>
@@ -137,14 +105,7 @@ const MeasurementConverter = () => {
                 </button>
             </div>
 
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '2rem',
-                padding: '2rem 1rem',
-                position: 'relative'
-            }}>
+            <div className="converter-container">
                 {/* Top: Inches */}
                 <div style={{ position: 'relative' }}>
                     <CircleInput
@@ -156,12 +117,7 @@ const MeasurementConverter = () => {
                 </div>
 
                 {/* Middle Row: CM, FEET (center), MM */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3rem',
-                    justifyContent: 'center'
-                }}>
+                <div className="converter-row">
                     <CircleInput
                         label="CM"
                         value={cm}
