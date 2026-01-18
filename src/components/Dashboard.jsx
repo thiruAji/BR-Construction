@@ -12,10 +12,8 @@ import constructionEmpty from '../assets/construction_empty_state.png';
 const Dashboard = ({ onSelectSite }) => {
     const { user, logout, isCEO, upgradeToCEO } = useAuth();
     const [sites, setSites] = useState([]);
+    const [activeTab, setActiveTab] = useState('projects'); // 'projects', 'converter', 'area', 'brick'
     const [showAddSite, setShowAddSite] = useState(false);
-    const [showConverter, setShowConverter] = useState(false);
-    const [showAreaCalculator, setShowAreaCalculator] = useState(false);
-    const [showBrickCalculator, setShowBrickCalculator] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteLocation, setNewSiteLocation] = useState('');
     const [loading, setLoading] = useState(true);
@@ -232,91 +230,286 @@ const Dashboard = ({ onSelectSite }) => {
                 </div>
             </header>
 
-            {/* Actions Bar */}
-            <div className="flex-between mb-lg">
-                <div className="flex gap-md" style={{ flex: 1, maxWidth: '600px' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                            <Icons.Search size={18} />
+            {/* Tab Navigation Bar */}
+            <div className="mb-lg" style={{ background: 'var(--bg-secondary)', padding: '4px', borderRadius: '12px', display: 'inline-flex', gap: '4px', flexWrap: 'wrap' }}>
+                <button
+                    onClick={() => setActiveTab('projects')}
+                    className={`btn btn-small ${activeTab === 'projects' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.Home size={16} style={{ marginRight: '6px' }} />
+                    All Projects
+                </button>
+                <button
+                    onClick={() => setActiveTab('converter')}
+                    className={`btn btn-small ${activeTab === 'converter' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.TrendingUp size={16} style={{ marginRight: '6px', transform: 'rotate(45deg)' }} />
+                    Measurement Converter
+                </button>
+                <button
+                    onClick={() => setActiveTab('area')}
+                    className={`btn btn-small ${activeTab === 'area' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.Building size={16} style={{ marginRight: '6px' }} />
+                    Area Calculator
+                </button>
+                <button
+                    onClick={() => setActiveTab('brick')}
+                    className={`btn btn-small ${activeTab === 'brick' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.Brick size={16} style={{ marginRight: '6px' }} />
+                    Brick Calculator
+                </button>
+            </div>
+
+            {/* MAIN CONTENT AREA BASED ON TAB */}
+
+            {/* 1. PROJECTS TAB (Search + Grid) */}
+            {activeTab === 'projects' && (
+                <div className="fade-in">
+                    {/* Search and Create Actions */}
+                    <div className="flex-between mb-lg">
+                        <div className="flex gap-md" style={{ flex: 1, maxWidth: '600px' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                                    <Icons.Search size={18} />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search projects by name or location..."
+                                    style={{ paddingLeft: '40px' }}
+                                />
+                            </div>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search projects by name or location..."
-                            style={{ paddingLeft: '40px' }}
-                        />
+
+                        {isCEOUser && (
+                            <button
+                                onClick={() => setShowAddSite(true)}
+                                className="btn btn-primary"
+                            >
+                                <Icons.Plus size={18} /> Create New Project
+                            </button>
+                        )}
+
+                        {!isCEOUser && (
+                            <button
+                                onClick={async () => {
+                                    const code = prompt("Enter CEO Secret Code:");
+                                    if (code) {
+                                        setUpgrading(true);
+                                        try {
+                                            const success = await upgradeToCEO(code);
+                                            if (success) alert("Successfully upgraded to CEO role.");
+                                            else alert("Invalid code.");
+                                        } catch (err) {
+                                            alert("An error occurred during upgrade.");
+                                        }
+                                        setUpgrading(false);
+                                    }
+                                }}
+                                disabled={upgrading}
+                                className="btn btn-secondary"
+                            >
+                                {upgrading ? 'Verifying...' : 'Upgrade to CEO'}
+                            </button>
+                        )}
                     </div>
+
+                    {/* Sites Grid */}
+                    {loading ? (
+                        <div className="flex-center" style={{ minHeight: '40vh', flexDirection: 'column', gap: '1rem' }}>
+                            <div className="loading-spinner"></div>
+                            <p className="text-secondary">Synchronizing project data...</p>
+                        </div>
+                    ) : (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                            gap: '1.5rem',
+                        }}>
+                            {sites.map((site, index) => (
+                                <div
+                                    key={site.id}
+                                    className="card fade-in"
+                                    onClick={() => {
+                                        console.log("🔍 Site card clicked:", site.id, site.name);
+                                        onSelectSite(site);
+                                    }}
+                                    style={{
+                                        cursor: 'pointer',
+                                        animationDelay: `${index * 0.05}s`,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        minHeight: '180px',
+                                        position: 'relative',
+                                        userSelect: 'none',
+                                        outline: 'none',
+                                        border: '1px solid var(--border-color)',
+                                        background: 'var(--card-bg, #fff)',
+                                        padding: '1.5rem',
+                                        font: 'inherit',
+                                        textAlign: 'left',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                                    }}
+                                    tabIndex={0}
+                                    role="button"
+                                >
+                                    {/* Show edit/delete buttons only if CEO and creator */}
+                                    {isCEOUser && site.createdBy === user.uid && (
+                                        <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    setEditingSite(site.id);
+                                                    setEditName(site.name);
+                                                    setEditLocation(site.location);
+                                                }}
+                                                style={{
+                                                    background: 'var(--primary-color)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    padding: '4px 8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    if (confirm(`Delete "${site.name}"?`)) {
+                                                        handleDeleteSite(site.id, site.name);
+                                                    }
+                                                }}
+                                                style={{
+                                                    background: 'var(--danger-color)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    padding: '4px 8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <div className="flex-between mb-sm">
+                                            <div className="badge badge-primary">Active Project</div>
+                                            <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                                ID: {site.id.substring(0, 8)}
+                                            </div>
+                                        </div>
+                                        {editingSite === site.id ? (
+                                            <div onClick={(e) => e.stopPropagation()} style={{ padding: '0.5rem 0' }}>
+                                                <input
+                                                    type="text"
+                                                    value={editName}
+                                                    onChange={(e) => setEditName(e.target.value)}
+                                                    placeholder="Site name"
+                                                    style={{ marginBottom: '0.5rem', width: '100%' }}
+                                                    autoFocus
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={editLocation}
+                                                    onChange={(e) => setEditLocation(e.target.value)}
+                                                    placeholder="Location"
+                                                    style={{ marginBottom: '0.5rem', width: '100%' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button
+                                                        onClick={() => handleUpdateSite(site.id)}
+                                                        className="btn btn-primary btn-small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingSite(null)}
+                                                        className="btn btn-secondary btn-small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h3 className="mb-sm" style={{ color: 'var(--primary-color)' }}>{site.name}</h3>
+                                                <p className="text-secondary" style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Icons.Location size={14} /> {site.location}
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="text-primary" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                                            {isCEOUser ? '✏️ Edit & Manage →' : '📊 View & Contribute →'}
+                                        </span>
+                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                            Created: {new Date(site.createdAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {!loading && sites.length === 0 && (
+                        <div className="flex-center" style={{ minHeight: '40vh', flexDirection: 'column', textAlign: 'center' }}>
+                            <div style={{ marginBottom: '1.5rem', maxWidth: '300px' }}>
+                                <img src={constructionEmpty} alt="No Projects" style={{ width: '100%', opacity: 0.9 }} />
+                            </div>
+                            <h3 className="text-secondary" style={{ marginTop: '-1rem', position: 'relative', zIndex: 1 }}>No Projects Found</h3>
+                            <p className="text-muted mb-md">Get started by creating your first construction project.</p>
+                            {isCEOUser && (
+                                <button onClick={() => setShowAddSite(true)} className="btn btn-primary">
+                                    <Icons.Plus size={18} /> Create Project
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
+            )}
 
-                {isCEOUser && (
-                    <button
-                        onClick={() => setShowAddSite(true)}
-                        className="btn btn-primary"
-                    >
-                        <Icons.Plus size={18} /> Create New Project
-                    </button>
-                )}
+            {/* 2. MEASUREMENT CONVERTER TAB */}
+            {activeTab === 'converter' && (
+                <div className="fade-in">
+                    <MeasurementConverter />
+                </div>
+            )}
 
-                {!isCEOUser && (
-                    <button
-                        onClick={async () => {
-                            const code = prompt("Enter CEO Secret Code:");
-                            if (code) {
-                                setUpgrading(true);
-                                try {
-                                    const success = await upgradeToCEO(code);
-                                    if (success) alert("Successfully upgraded to CEO role.");
-                                    else alert("Invalid code.");
-                                } catch (err) {
-                                    alert("An error occurred during upgrade.");
-                                }
-                                setUpgrading(false);
-                            }
-                        }}
-                        disabled={upgrading}
-                        className="btn btn-secondary"
-                    >
-                        {upgrading ? 'Verifying...' : 'Upgrade to CEO'}
-                    </button>
-                )}
-            </div>
+            {/* 3. AREA CALCULATOR TAB */}
+            {activeTab === 'area' && (
+                <div className="fade-in">
+                    <AreaCalculator />
+                </div>
+            )}
 
-            {/* Stacked Tools Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
-
-                {/* 1. Measurement Converter */}
-                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
-                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icons.TrendingUp size={20} style={{ transform: 'rotate(45deg)', color: 'var(--primary-color)' }} />
-                        Measurement Converter
-                    </summary>
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                        <MeasurementConverter />
-                    </div>
-                </details>
-
-                {/* 2. Area Calculator */}
-                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
-                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icons.Building size={20} style={{ color: 'var(--primary-color)' }} />
-                        Area Calculator
-                    </summary>
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                        <AreaCalculator />
-                    </div>
-                </details>
-
-                {/* 3. Brick Calculator */}
-                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
-                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icons.Brick size={20} style={{ color: 'var(--primary-color)' }} />
-                        Brick Calculator
-                    </summary>
-                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                        <BrickCalculator />
-                    </div>
-                </details>
-
-            </div>
+            {/* 4. BRICK CALCULATOR TAB */}
+            {activeTab === 'brick' && (
+                <div className="fade-in">
+                    <BrickCalculator />
+                </div>
+            )}
 
             {/* Add Site Modal/Form */}
             {showAddSite && (
@@ -366,174 +559,7 @@ const Dashboard = ({ onSelectSite }) => {
                 </div>
             )}
 
-            {/* Sites Grid */}
-            {loading ? (
-                <div className="flex-center" style={{ minHeight: '40vh', flexDirection: 'column', gap: '1rem' }}>
-                    <div className="loading-spinner"></div>
-                    <p className="text-secondary">Synchronizing project data...</p>
-                </div>
-            ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-                    gap: '1.5rem',
-                }}>
-                    {sites.map((site, index) => (
-                        <div
-                            key={site.id}
-                            className="card fade-in"
-                            onClick={() => {
-                                console.log("🔍 Site card clicked:", site.id, site.name);
-                                onSelectSite(site);
-                            }}
-                            style={{
-                                cursor: 'pointer',
-                                animationDelay: `${index * 0.05}s`,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                minHeight: '180px',
-                                position: 'relative',
-                                userSelect: 'none',
-                                outline: 'none',
-                                border: '1px solid var(--border-color)',
-                                background: 'var(--card-bg, #fff)',
-                                padding: '1.5rem',
-                                font: 'inherit',
-                                textAlign: 'left',
-                                borderRadius: '12px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                            }}
-                            tabIndex={0}
-                            role="button"
-                        >
-                            {/* Show edit/delete buttons only if CEO and creator */}
-                            {isCEOUser && site.createdBy === user.uid && (
-                                <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            setEditingSite(site.id);
-                                            setEditName(site.name);
-                                            setEditLocation(site.location);
-                                        }}
-                                        style={{
-                                            background: 'var(--primary-color)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            padding: '4px 8px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600
-                                        }}
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            if (confirm(`Delete "${site.name}"?`)) {
-                                                handleDeleteSite(site.id, site.name);
-                                            }
-                                        }}
-                                        style={{
-                                            background: 'var(--danger-color)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            padding: '4px 8px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            )}
 
-                            <div>
-                                <div className="flex-between mb-sm">
-                                    <div className="badge badge-primary">Active Project</div>
-                                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                        ID: {site.id.substring(0, 8)}
-                                    </div>
-                                </div>
-                                {editingSite === site.id ? (
-                                    <div onClick={(e) => e.stopPropagation()} style={{ padding: '0.5rem 0' }}>
-                                        <input
-                                            type="text"
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
-                                            placeholder="Site name"
-                                            style={{ marginBottom: '0.5rem', width: '100%' }}
-                                            autoFocus
-                                        />
-                                        <input
-                                            type="text"
-                                            value={editLocation}
-                                            onChange={(e) => setEditLocation(e.target.value)}
-                                            placeholder="Location"
-                                            style={{ marginBottom: '0.5rem', width: '100%' }}
-                                        />
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button
-                                                onClick={() => handleUpdateSite(site.id)}
-                                                className="btn btn-primary btn-small"
-                                                style={{ flex: 1 }}
-                                            >
-                                                Save
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingSite(null)}
-                                                className="btn btn-secondary btn-small"
-                                                style={{ flex: 1 }}
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <h3 className="mb-sm" style={{ color: 'var(--primary-color)' }}>{site.name}</h3>
-                                        <p className="text-secondary" style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Icons.Location size={14} /> {site.location}
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-
-                            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span className="text-primary" style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                                    {isCEOUser ? '✏️ Edit & Manage →' : '📊 View & Contribute →'}
-                                </span>
-                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                    Created: {new Date(site.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && sites.length === 0 && (
-                <div className="flex-center" style={{ minHeight: '40vh', flexDirection: 'column', textAlign: 'center' }}>
-                    <div style={{ marginBottom: '1.5rem', maxWidth: '300px' }}>
-                        <img src={constructionEmpty} alt="No Projects" style={{ width: '100%', opacity: 0.9 }} />
-                    </div>
-                    <h3 className="text-secondary" style={{ marginTop: '-1rem', position: 'relative', zIndex: 1 }}>No Projects Found</h3>
-                    <p className="text-muted mb-md">Get started by creating your first construction project.</p>
-                    {isCEOUser && (
-                        <button onClick={() => setShowAddSite(true)} className="btn btn-primary">
-                            <Icons.Plus size={18} /> Create Project
-                        </button>
-                    )}
-                </div>
-            )}
         </div>
     );
 };
