@@ -205,5 +205,17 @@ export const Icons = {
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
         </svg>
+    ),
+    Brick: ({ size = 20 }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 7h16" />
+            <path d="M4 17h16" />
+            <path d="M4 21h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" />
+            <path d="M8 3v4" />
+            <path d="M16 3v4" />
+            <path d="M12 7v10" />
+            <path d="M8 17v4" />
+            <path d="M16 17v4" />
+        </svg>
     )
 };

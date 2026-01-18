@@ -5,6 +5,7 @@ import { collection, addDoc, onSnapshot, query, orderBy, limit, deleteDoc, doc, 
 import { Icons } from './Icons';
 import MeasurementConverter from './MeasurementConverter';
 import AreaCalculator from './AreaCalculator';
+import BrickCalculator from './BrickCalculator';
 import '../index.css';
 import constructionEmpty from '../assets/construction_empty_state.png';
 
@@ -14,6 +15,7 @@ const Dashboard = ({ onSelectSite }) => {
     const [showAddSite, setShowAddSite] = useState(false);
     const [showConverter, setShowConverter] = useState(false);
     const [showAreaCalculator, setShowAreaCalculator] = useState(false);
+    const [showBrickCalculator, setShowBrickCalculator] = useState(false);
     const [newSiteName, setNewSiteName] = useState('');
     const [newSiteLocation, setNewSiteLocation] = useState('');
     const [loading, setLoading] = useState(true);
@@ -276,29 +278,45 @@ const Dashboard = ({ onSelectSite }) => {
                         {upgrading ? 'Verifying...' : 'Upgrade to CEO'}
                     </button>
                 )}
-                <button
-                    onClick={() => setShowConverter(!showConverter)}
-                    className="btn btn-secondary"
-                    title="Toggle Measurement Converter"
-                >
-                    <Icons.TrendingUp size={18} style={{ transform: 'rotate(45deg)' }} />
-                    {showConverter ? 'Hide' : 'Show'} Converter
-                </button>
-                <button
-                    onClick={() => setShowAreaCalculator(!showAreaCalculator)}
-                    className="btn btn-secondary"
-                    title="Toggle Area Calculator"
-                >
-                    <Icons.Building size={18} />
-                    {showAreaCalculator ? 'Hide' : 'Show'} Area Calculator
-                </button>
             </div>
 
-            {/* Measurement Converter Tool */}
-            {showConverter && <MeasurementConverter />}
+            {/* Stacked Tools Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
 
-            {/* Area Calculator Tool */}
-            {showAreaCalculator && <AreaCalculator />}
+                {/* 1. Measurement Converter */}
+                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icons.TrendingUp size={20} style={{ transform: 'rotate(45deg)', color: 'var(--primary-color)' }} />
+                        Measurement Converter
+                    </summary>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                        <MeasurementConverter />
+                    </div>
+                </details>
+
+                {/* 2. Area Calculator */}
+                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icons.Building size={20} style={{ color: 'var(--primary-color)' }} />
+                        Area Calculator
+                    </summary>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                        <AreaCalculator />
+                    </div>
+                </details>
+
+                {/* 3. Brick Calculator */}
+                <details className="card" open style={{ padding: '0.5rem 1rem' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 600, padding: '1rem 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icons.Brick size={20} style={{ color: 'var(--primary-color)' }} />
+                        Brick Calculator
+                    </summary>
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                        <BrickCalculator />
+                    </div>
+                </details>
+
+            </div>
 
             {/* Add Site Modal/Form */}
             {showAddSite && (
