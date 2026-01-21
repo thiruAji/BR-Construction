@@ -7,6 +7,7 @@ import MeasurementConverter from './MeasurementConverter';
 import AreaCalculator from './AreaCalculator';
 import BrickCalculator from './BrickCalculator';
 import ConcreteCalculator from './ConcreteCalculator';
+import BarBendingSchedule from './BarBendingSchedule';
 import '../index.css';
 import constructionEmpty from '../assets/construction_empty_state.png';
 
@@ -273,6 +274,14 @@ const Dashboard = ({ onSelectSite }) => {
                     <Icons.Layers size={16} style={{ marginRight: '6px' }} />
                     Concrete Calculator
                 </button>
+                <button
+                    onClick={() => setActiveTab('bbs')}
+                    className={`btn btn-small ${activeTab === 'bbs' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ borderRadius: '8px' }}
+                >
+                    <Icons.TrendingUp size={16} style={{ marginRight: '6px' }} />
+                    Bar Bending (BBS)
+                </button>
             </div>
 
             {/* MAIN CONTENT AREA BASED ON TAB */}
@@ -520,10 +529,16 @@ const Dashboard = ({ onSelectSite }) => {
                 </div>
             )}
 
-            {/* 5. CONCRETE CALCULATOR TAB */}
             {activeTab === 'concrete' && (
                 <div className="fade-in">
                     <ConcreteCalculator />
+                </div>
+            )}
+
+            {/* 6. BAR BENDING SCHEDULE TAB */}
+            {activeTab === 'bbs' && (
+                <div className="fade-in">
+                    <BarBendingSchedule />
                 </div>
             )}
 
