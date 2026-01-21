@@ -337,6 +337,30 @@ const BarBendingSchedule = () => {
                                 <strong style={{ fontSize: '1.2rem' }}>Ø</strong>
                                 <span>Diameter (Dia)</span>
                             </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>CL</strong>
+                                <span>Center Line</span>
+                            </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>FFL</strong>
+                                <span>Finished Floor Level</span>
+                            </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>BM</strong>
+                                <span>Beam</span>
+                            </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>COL</strong>
+                                <span>Column</span>
+                            </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>SL</strong>
+                                <span>Slab</span>
+                            </div>
+                            <div className="p-sm bg-light rounded flex gap-sm items-center">
+                                <strong style={{ fontSize: '1.2rem' }}>RCC</strong>
+                                <span>Reinforced Concrete</span>
+                            </div>
                         </div>
                         <div className="mt-lg">
                             <h4>Standard Bends</h4>
